@@ -2,6 +2,10 @@
 #include <math.h>
 
 #include <ew/external/glad.h>
+#include <ew/shader.h>
+#include <ew/model.h>
+#include <ew/camera.h>
+#include <ew/transform.h>
 
 #include <GLFW/glfw3.h>
 #include <imgui.h>
@@ -20,6 +24,22 @@ float deltaTime;
 
 int main() {
 	GLFWwindow* window = initWindow("Assignment 0", screenWidth, screenHeight);
+
+	//Shader, Model, and Camera
+	ew::Shader shader = ew::Shader("assets/lit.vert", "assets/lit.frag");
+	ew::Model monkeyModel = ew::Model("assets/Suzanne.obj");
+	ew::Transform monkeyTransform;
+	ew::Camera camera;
+	camera.position = glm::vec3(0.0f, 0.0f, 5.0f);
+	camera.target = glm::vec3(0.0f, 0.0f, 0.0f);
+	camera.aspectRatio = (float)screenWidth / screenHeight;
+	camera.fov = 60.0f;
+
+	//Global OpenGL Variables
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK); //Back face culling
+	glEnable(GL_DEPTH_TEST); //Depth testing
+
 	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
 	while (!glfwWindowShouldClose(window)) {
@@ -32,6 +52,21 @@ int main() {
 		//RENDER
 		glClearColor(0.6f,0.8f,0.92f,1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		//Use Shader and draw Model
+		shader.use();
+		shader.setMat4("_Model", glm::mat4(1.0f));
+		shader.setMat4("_ViewProjection", camera.projectionMatrix() * camera.viewMatrix());
+
+
+		//Rotate model around Y axis
+		monkeyTransform.rotation = glm::rotate(monkeyTransform.rotation, deltaTime, glm::vec3(0.0, 1.0, 0.0));
+
+		//transform.modelMatrix() combines translation, rotation, and scale into a 4x4 model matrix
+		shader.setMat4("_Model", monkeyTransform.modelMatrix());
+
+		monkeyModel.draw();
+
 
 		drawUI();
 
