@@ -71,6 +71,7 @@ int main() {
 		shader.use();
 		shader.setMat4("_Model", glm::mat4(1.0f));
 		shader.setInt("_MainTex", 0);
+		shader.setVec3("_EyePos", camera.position);
 		
 		//Camera Controller
 		cameraController.move(window, &camera, deltaTime);
