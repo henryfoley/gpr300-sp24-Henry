@@ -28,6 +28,14 @@ float deltaTime;
 ew::Camera camera;
 ew::CameraController cameraController;
 
+//Material
+struct Material {
+	float Ka = 1.0;
+	float Kd = 0.5;
+	float Ks = 0.5;
+	float Shininess = 128;
+}material;
+
 int main() {
 	GLFWwindow* window = initWindow("Assignment 0", screenWidth, screenHeight);
 
@@ -44,6 +52,7 @@ int main() {
 
 	//Textures
 	GLuint monkeyTexture = ew::loadTexture("assets/monkey_color.jpg");
+	GLuint monkeyNormal = ew::loadTexture("assets/monkey_normal.jpg");
 
 	//Global OpenGL Variables
 	glEnable(GL_CULL_FACE);
@@ -66,12 +75,22 @@ int main() {
 		//Bind Texture
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, monkeyTexture);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, monkeyNormal);
 
 		//Use Shader and draw Model
 		shader.use();
 		shader.setMat4("_Model", glm::mat4(1.0f));
 		shader.setInt("_MainTex", 0);
+		shader.setInt("_NormalTex", 1);
 		shader.setVec3("_EyePos", camera.position);
+
+		//Set Material Properties
+		shader.setFloat("_Material.Ka", material.Ka);
+		shader.setFloat("_Material.Kd", material.Kd);
+		shader.setFloat("_Material.Ks", material.Ks);
+		shader.setFloat("_Material.Shininess", material.Shininess);
+		shader.setFloat("_Material.Shininess", material.Shininess);
 		
 		//Camera Controller
 		cameraController.move(window, &camera, deltaTime);
@@ -107,6 +126,12 @@ void drawUI() {
 	ImGui::Begin("Settings");
 	if (ImGui::Button("Reset Camera")) {
 		resetCamera(&camera, &cameraController);
+	}
+	if (ImGui::CollapsingHeader("Material")) {
+		ImGui::SliderFloat("AmbientK", &material.Ka, 0.0f, 1.0f);
+		ImGui::SliderFloat("DiffuseK", &material.Kd, 0.0f, 1.0f);
+		ImGui::SliderFloat("SpecularK", &material.Ks, 0.0f, 1.0f);
+		ImGui::SliderFloat("Shininess", &material.Shininess, 2.0f, 1024.0f);
 	}
 
 	ImGui::Text("Add Controls Here!");
