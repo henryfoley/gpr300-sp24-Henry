@@ -38,6 +38,12 @@ struct Material {
 	float Shininess = 128;
 }material;
 
+//Post Process Parameters
+struct PostProcess
+{
+	bool inverse = 0;
+}postProcess;
+
 //Creating Frame Buffer Quad
 float quadVertices[] =
 {
@@ -73,13 +79,6 @@ int main() {
 	shader.setInt("_NormalTex", 1);
 	shader.setVec3("_EyePos", camera.position);
 
-	//Set Material Properties
-	shader.setFloat("_Material.Ka", material.Ka);
-	shader.setFloat("_Material.Kd", material.Kd);
-	shader.setFloat("_Material.Ks", material.Ks);
-	shader.setFloat("_Material.Shininess", material.Shininess);
-	shader.setFloat("_Material.Shininess", material.Shininess);
-
 	//Textures
 	GLuint monkeyTexture = ew::loadTexture("assets/monkey_color.jpg");
 	GLuint monkeyNormal = ew::loadTexture("assets/monkey_normal.jpg");
@@ -100,7 +99,7 @@ int main() {
 	GLenum attachments[1] = { GL_COLOR_ATTACHMENT0 };
 	ew::Shader screenShader = ew::Shader("assets/postProcess.vert", "assets/postProcess.frag");
 	screenShader.use();
-	screenShader.setInt("screenTexture", 0);
+	screenShader.setInt("_ScreenTexture", 0);
 	hfLib::Framebuffer framebuffer = hfLib::createFramebuffer(screenWidth, screenHeight, GL_RGB16F);
 
 	//Global OpenGL Variables
@@ -130,7 +129,7 @@ int main() {
 		//Bind Texture
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, monkeyTexture);
-		//glActiveTexture(GL_TEXTURE1);
+		//glActiveTexture(GL_TEXTURE1);		//todo fix!
 		//glBindTexture(GL_TEXTURE_2D, monkeyNormal);
 
 		//Draw Scene
@@ -144,6 +143,13 @@ int main() {
 		//transform.modelMatrix() combines translation, rotation, and scale into a 4x4 model matrix
 		shader.setMat4("_Model", monkeyTransform.modelMatrix());
 
+		//Set Material Properties
+		shader.setFloat("_Material.Ka", material.Ka);
+		shader.setFloat("_Material.Kd", material.Kd);
+		shader.setFloat("_Material.Ks", material.Ks);
+		shader.setFloat("_Material.Shininess", material.Shininess);
+		shader.setFloat("_Material.Shininess", material.Shininess);
+
 		//Draw Mesh to Screen
 		monkeyModel.draw();
 
@@ -153,6 +159,8 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		screenShader.use();
+		screenShader.setInt("_InverseOn", postProcess.inverse);
+
 		glBindVertexArray(quadVAO);
 		glDisable(GL_DEPTH_TEST);
 		glBindTexture(GL_TEXTURE_2D, (GLuint)framebuffer.colorBuffer);
@@ -185,6 +193,9 @@ void drawUI() {
 		ImGui::SliderFloat("DiffuseK", &material.Kd, 0.0f, 1.0f);
 		ImGui::SliderFloat("SpecularK", &material.Ks, 0.0f, 1.0f);
 		ImGui::SliderFloat("Shininess", &material.Shininess, 2.0f, 1024.0f);
+	}
+	if (ImGui::CollapsingHeader("Post Process")) {
+		ImGui::Checkbox("Inverse Colors", &postProcess.inverse);
 	}
 
 	ImGui::Text("Add Controls Here!");
