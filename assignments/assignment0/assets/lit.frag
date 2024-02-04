@@ -1,8 +1,9 @@
 #version 450
+
 out vec4 FragColor; //The color of this fragment
 
 in Surface{
-	vec2 TexCoord;
+	vec2 TexCoords;
 	vec3 WorldPos;		//Vertex position in world space
 	vec3 WorldNormal;	//Vertex normal in world space
 	mat3 TBN;			//TBN Matrix
@@ -30,7 +31,7 @@ void main(){
 	
 	//Normal Maps
 	vec3 normal = normalize(fs_in.WorldNormal);
-	normal = texture(_NormalTex, fs_in.TexCoord).rgb;
+	normal = texture(_NormalTex, fs_in.TexCoords).rgb;
 	normal = normal * 2.0 - 1.0;
 	normal = normalize(fs_in.TBN * normal);
 

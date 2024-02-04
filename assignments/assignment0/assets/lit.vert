@@ -1,4 +1,5 @@
 #version 450
+
 //Vertex attributes
 layout(location = 0) in vec3 vPos; //Vertex position in model space
 layout(location = 1) in vec3 vNormal; //Vertex position in model space

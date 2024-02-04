@@ -8,6 +8,7 @@
 #include <ew/cameraController.h>
 #include <ew/transform.h>
 #include <ew/texture.h>
+#include <ew/procGen.h>
 
 #include <GLFW/glfw3.h>
 #include <imgui.h>
@@ -43,6 +44,26 @@ int main() {
 	ew::Shader shader = ew::Shader("assets/lit.vert", "assets/lit.frag");
 	ew::Model monkeyModel = ew::Model("assets/Suzanne.fbx");
 	ew::Transform monkeyTransform;
+
+	//Use Shader
+	shader.use();
+	shader.setMat4("_Model", glm::mat4(1.0f));
+	shader.setInt("_MainTex", 0);
+	shader.setInt("_NormalTex", 1);
+	shader.setVec3("_EyePos", camera.position);
+
+	//Set Material Properties
+	shader.setFloat("_Material.Ka", material.Ka);
+	shader.setFloat("_Material.Kd", material.Kd);
+	shader.setFloat("_Material.Ks", material.Ks);
+	shader.setFloat("_Material.Shininess", material.Shininess);
+	shader.setFloat("_Material.Shininess", material.Shininess);
+
+	//Screen Quad
+	ew::Mesh screenPlane(ew::createPlane(screenWidth,screenHeight,0));
+	ew::Shader screenShader = ew::Shader("assets/postProcess.vert", "assets/postProcess.frag");
+	screenShader.use();
+	screenShader.setInt("screenTexture", 0);
 	
 	//Set Camera variables
 	camera.position = glm::vec3(0.0f, 0.0f, 5.0f);
@@ -78,20 +99,6 @@ int main() {
 		glActiveTexture(GL_TEXTURE1);
 		glBindTexture(GL_TEXTURE_2D, monkeyNormal);
 
-		//Use Shader and draw Model
-		shader.use();
-		shader.setMat4("_Model", glm::mat4(1.0f));
-		shader.setInt("_MainTex", 0);
-		shader.setInt("_NormalTex", 1);
-		shader.setVec3("_EyePos", camera.position);
-
-		//Set Material Properties
-		shader.setFloat("_Material.Ka", material.Ka);
-		shader.setFloat("_Material.Kd", material.Kd);
-		shader.setFloat("_Material.Ks", material.Ks);
-		shader.setFloat("_Material.Shininess", material.Shininess);
-		shader.setFloat("_Material.Shininess", material.Shininess);
-		
 		//Camera Controller
 		cameraController.move(window, &camera, deltaTime);
 		shader.setMat4("_ViewProjection", camera.projectionMatrix() * camera.viewMatrix());
