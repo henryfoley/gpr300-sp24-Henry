@@ -4,8 +4,9 @@
 *	Author: Henry Foley
 */
 
-#include <GLFW/glfw3.h>
-//#include "external/glad.h"
+#include "../ew/external/glad.h"
+#include <cstdlib>
+#include <iostream>
 
 namespace hfLib {
 	struct Framebuffer
