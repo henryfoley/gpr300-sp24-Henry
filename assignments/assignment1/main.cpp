@@ -9,6 +9,7 @@
 #include <ew/transform.h>
 #include <ew/texture.h>
 #include <ew/procGen.h>
+#include <hfLib/framebuffer.h>
 
 #include <GLFW/glfw3.h>
 #include <imgui.h>
@@ -37,15 +38,35 @@ struct Material {
 	float Shininess = 128;
 }material;
 
+//Creating Frame Buffer Quad
+float quadVertices[] =
+{
+	// Coords	// texCoords
+	-1.0f,  1.0f,	0.0f, 1.0f,
+	-1.0f, -1.0f,	0.0f, 0.0f,
+	 1.0f, -1.0f,	1.0f, 0.0f,
+
+	-1.0f,	1.0f,	0.0f, 1.0f,
+	 1.0f, -1.0f,	1.0f, 0.0f,
+	 1.0f,	1.0f,	1.0f, 1.0f
+};
+
+
 int main() {
 	GLFWwindow* window = initWindow("Assignment 0", screenWidth, screenHeight);
+
+	//Set Camera variables
+	camera.position = glm::vec3(0.0f, 0.0f, 5.0f);
+	camera.target = glm::vec3(0.0f, 0.0f, 0.0f);
+	camera.aspectRatio = (float)screenWidth / screenHeight;
+	camera.fov = 60.0f;
 
 	//Shader, Model, and Transform
 	ew::Shader shader = ew::Shader("assets/lit.vert", "assets/lit.frag");
 	ew::Model monkeyModel = ew::Model("assets/Suzanne.fbx");
 	ew::Transform monkeyTransform;
 
-	//Use Shader
+	//Set Shader Params
 	shader.use();
 	shader.setMat4("_Model", glm::mat4(1.0f));
 	shader.setInt("_MainTex", 0);
@@ -59,27 +80,35 @@ int main() {
 	shader.setFloat("_Material.Shininess", material.Shininess);
 	shader.setFloat("_Material.Shininess", material.Shininess);
 
-	//Screen Quad
-	ew::Mesh screenPlane(ew::createPlane(screenWidth,screenHeight,0));
-	ew::Shader screenShader = ew::Shader("assets/postProcess.vert", "assets/postProcess.frag");
-	screenShader.use();
-	screenShader.setInt("screenTexture", 0);
-	
-	//Set Camera variables
-	camera.position = glm::vec3(0.0f, 0.0f, 5.0f);
-	camera.target = glm::vec3(0.0f, 0.0f, 0.0f);
-	camera.aspectRatio = (float)screenWidth / screenHeight;
-	camera.fov = 60.0f;
-
 	//Textures
 	GLuint monkeyTexture = ew::loadTexture("assets/monkey_color.jpg");
 	GLuint monkeyNormal = ew::loadTexture("assets/monkey_normal.jpg");
+
+	//Create Framebuffer Screen Quad
+	unsigned int quadVAO, quadVBO;
+	glGenVertexArrays(1, &quadVAO);
+	glGenBuffers(1, &quadVBO);
+	glBindVertexArray(quadVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+
+	//Framebuffer shader configuration
+	GLenum attachments[1] = { GL_COLOR_ATTACHMENT0 };
+	ew::Shader screenShader = ew::Shader("assets/postProcess.vert", "assets/postProcess.frag");
+	screenShader.use();
+	screenShader.setInt("screenTexture", 0);
+	hfLib::Framebuffer framebuffer = hfLib::createFramebuffer(screenWidth, screenHeight, GL_RGB16F);
 
 	//Global OpenGL Variables
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK); //Back face culling
 	glEnable(GL_DEPTH_TEST); //Depth testing
-
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);	//Draw as Wireframe
+	
 	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
 	while (!glfwWindowShouldClose(window)) {
@@ -89,16 +118,22 @@ int main() {
 		deltaTime = time - prevFrameTime;
 		prevFrameTime = time;
 
-		//RENDER
+		//Render First Pass
+		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.fbo);
 		glClearColor(0.6f,0.8f,0.92f,1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST);
+
+		//Use Model Shader
+		shader.use();
 
 		//Bind Texture
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, monkeyTexture);
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, monkeyNormal);
+		//glActiveTexture(GL_TEXTURE1);
+		//glBindTexture(GL_TEXTURE_2D, monkeyNormal);
 
+		//Draw Scene
 		//Camera Controller
 		cameraController.move(window, &camera, deltaTime);
 		shader.setMat4("_ViewProjection", camera.projectionMatrix() * camera.viewMatrix());
@@ -111,6 +146,17 @@ int main() {
 
 		//Draw Mesh to Screen
 		monkeyModel.draw();
+
+		//Second Pass
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		screenShader.use();
+		glBindVertexArray(quadVAO);
+		glDisable(GL_DEPTH_TEST);
+		glBindTexture(GL_TEXTURE_2D, (GLuint)framebuffer.colorBuffer);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		drawUI();
 

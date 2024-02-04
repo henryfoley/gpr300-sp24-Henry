@@ -12,7 +12,8 @@ namespace hfLib {
 	struct Framebuffer
 	{
 		unsigned int fbo;
-		unsigned int colorBuffer[8];
+		unsigned int colorBuffer;
+		//unsigned int colorBuffers[8];
 		unsigned int depthBuffer;
 		unsigned int width;
 		unsigned int height;

@@ -8,18 +8,23 @@ namespace hfLib {
 		Framebuffer framebuffer;
 
 		//Frame Buffer Configuration
-		glGenFramebuffers(1, &framebuffer.fbo);
+		glCreateFramebuffers(1, &framebuffer.fbo);
 		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.fbo);
 
-		//Color Buffer
-		glGenTextures(1, &framebuffer.colorBuffer[0]);
-		glBindTexture(GL_TEXTURE_2D, framebuffer.colorBuffer[0]);
-		glTexImage2D(GL_TEXTURE_2D, 0, colorFormat, width, height, 0, colorFormat, GL_UNSIGNED_BYTE, NULL);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glBindTexture(GL_TEXTURE_2D, framebuffer.colorBuffer[0]);
+		//Create Single Color Buffer
+		glGenTextures(1, &framebuffer.colorBuffer);
+		glBindTexture(GL_TEXTURE_2D, framebuffer.colorBuffer);
+		glTexStorage2D(GL_TEXTURE_2D, 1, colorFormat, width, height);
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, framebuffer.colorBuffer, 0);
+
+		//Multiple Color Buffer
+		/*glGenTextures(8, framebuffer.colorBuffers);
+		for (unsigned int i = 0; i < 8; i++)
+		{
+			glBindTexture(GL_TEXTURE_2D, framebuffer.colorBuffers[i]);
+			glTexStorage2D(GL_TEXTURE_2D, 1, colorFormat, width, height);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, framebuffer.colorBuffers[i], 0);
+		}*/
 
 		//Depth Buffer and Stencil Buffer as Render Buffer
 
