@@ -6,9 +6,15 @@ in vec2 TexCoords;
 
 const float offset = 1.0/300.0;
 
+
+uniform bool _InverseOn;
+uniform int _EffectNumber;
+uniform vec3 _KernelTop;
+uniform vec3 _KernelCenter;
+uniform vec3 _KernelBottom;
 uniform float _BlurAmount;
 uniform sampler2D _ScreenTexture;
-uniform bool _InverseOn;
+
 
 void main()
 {
@@ -23,40 +29,45 @@ void main()
 		vec2( 0.0f,	 offset),	// bottom - center
 		vec2(-offset,offset)	// bottom - right
 	);
-
-	float kernal[9] = float[](
-    1.0 / 16, 2.0 / 16, 1.0 / 16,
-    2.0 / 16, 4.0 / 16, 2.0 / 16,
-    1.0 / 16, 2.0 / 16, 1.0 / 16  
+	
+	float kernel[9] = float[](
+		_KernelTop.x,	_KernelTop.y,	_KernelTop.z,
+		_KernelCenter.x,	_KernelCenter.y,	_KernelCenter.z,
+		_KernelBottom.x,	_KernelBottom.y,	_KernelBottom.z
 	);
 
-	// Kernal Effects
-	vec3 sampleTex[9];
-	for(int i = 0; i < 9; i++)
-	{
-		sampleTex[i] = vec3(texture(_ScreenTexture, TexCoords.st + offsets[i]));
-	}
-	vec3 col = vec3(0.0);
-	for(int i = 0; i < 9; i++)
-	{
-		col += sampleTex[i] * kernal[i];
-	}
 
-	FragColor = vec4(col, 1.0);
+	// Kernel Effects
+	if(_EffectNumber == 0){
+		vec3 sampleTex[9];
+		for(int i = 0; i < 9; i++)
+		{
+			sampleTex[i] = vec3(texture(_ScreenTexture, TexCoords.st + offsets[i]));
+		}
+		vec3 col = vec3(0.0);
+		for(int i = 0; i < 9; i++)
+		{
+			col += sampleTex[i] * kernel[i];
+		}
+
+		FragColor = vec4(col, 1.0);
+	}
 
 	// Box Blur
-	//vec2 texelSize = _BlurAmount/textureSize(_ScreenTexture,0).xy;		// Where blur value is being adjusted
-	//vec3 totalColor = vec3(0);
+	if(_EffectNumber == 1){
+	vec2 texelSize = _BlurAmount/textureSize(_ScreenTexture,0).xy;		// Where blur value is being adjusted
+	vec3 totalColor = vec3(0);
 
-	//for(int y = -2; y <=2; y++){
-		//for(int x = -2; x <=2; x++){
-			//vec2 offset = vec2(x,y) * texelSize;
-			//totalColor += texture(_ScreenTexture, TexCoords + offset).rgb;
-		//}
-	//}
-	//totalColor /= (5*5);
+	for(int y = -2; y <=2; y++){
+		for(int x = -2; x <=2; x++){
+			vec2 offset = vec2(x,y) * texelSize;
+			totalColor += texture(_ScreenTexture, TexCoords + offset).rgb;
+		}
+	}
+	totalColor /= (5*5);
 
-	//FragColor = vec4(totalColor,1.0);
+	FragColor = vec4(totalColor,1.0);
+	}
 
 	// Inverse Color
 	if(_InverseOn){
