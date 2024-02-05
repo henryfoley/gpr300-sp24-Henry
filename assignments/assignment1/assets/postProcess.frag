@@ -14,7 +14,8 @@ uniform vec3 _KernelCenter;
 uniform vec3 _KernelBottom;
 uniform float _BlurAmount;
 uniform sampler2D _ScreenTexture;
-
+uniform sampler2D _ColorBuffer;
+uniform sampler2D _DepthBuffer;
 
 void main()
 {
@@ -54,19 +55,33 @@ void main()
 	}
 
 	// Box Blur
-	if(_EffectNumber == 1){
-	vec2 texelSize = _BlurAmount/textureSize(_ScreenTexture,0).xy;		// Where blur value is being adjusted
-	vec3 totalColor = vec3(0);
+	else if(_EffectNumber == 1){
+		vec2 texelSize = _BlurAmount/textureSize(_ScreenTexture,0).xy;		// Where blur value is being adjusted
+		vec3 totalColor = vec3(0);
 
-	for(int y = -2; y <=2; y++){
-		for(int x = -2; x <=2; x++){
-			vec2 offset = vec2(x,y) * texelSize;
-			totalColor += texture(_ScreenTexture, TexCoords + offset).rgb;
+		for(int y = -2; y <=2; y++){
+			for(int x = -2; x <=2; x++){
+				vec2 offset = vec2(x,y) * texelSize;
+				totalColor += texture(_ScreenTexture, TexCoords + offset).rgb;
+			}
 		}
-	}
-	totalColor /= (5*5);
+		totalColor /= (5*5);
 
-	FragColor = vec4(totalColor,1.0);
+		FragColor = vec4(totalColor,1.0);
+	}
+
+	//Gamma Correction
+	else if(_EffectNumber == 2){
+		vec3 color = texture(_ScreenTexture,TexCoords).rgb;					// Don't think this is working properly
+		color = pow(color,vec3(1.0/2.2));
+		FragColor = vec4(color, 1.0);
+	}
+
+	//sRGB Correction
+	else if(_EffectNumber == 3){
+		vec3 diffuseColor = texture(_ScreenTexture, TexCoords).rgb;			// Don't think this is working properly
+		diffuseColor = pow(diffuseColor, vec3(2.2));
+		FragColor = vec4(diffuseColor, 1.0);
 	}
 
 	// Inverse Color

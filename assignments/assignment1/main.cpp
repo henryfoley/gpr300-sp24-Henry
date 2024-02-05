@@ -41,12 +41,13 @@ struct Material {
 //Post Process Parameters
 struct PostProcess
 {
-	bool inverse = 0;
-	bool effectNumber = 0;			//Changing this number changes the current Post Processing Effect
-	float blurAmount = 1.0;
+	bool inverse = 0;										//Invert Colors
+	int effectNumber = 0;									//Changing this number changes the current Post Processing Effect
+	float blurAmount = 1.0;									//Change Power of Box Blur
 	glm::vec3 kernelTop = glm::vec3(0);						//Top Row of Kernel Matrix
 	glm::vec3 kernelCenter = glm::vec3(0.0, 1.0, 0.0);		//Center Row of Kernel Matrix
 	glm::vec3 kernelBottom = glm::vec3(0);					//Bottom Row of Kernel Matrix
+
 }postProcess;
 
 //Creating Frame Buffer Quad
@@ -163,13 +164,16 @@ int main() {
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		//Post Processing Effects
 		screenShader.use();
-		screenShader.setInt("_InverseOn", postProcess.inverse);
-		screenShader.setInt("_EffectNumber", postProcess.effectNumber);
-		screenShader.setFloat("_BlurAmount", postProcess.blurAmount);
-		screenShader.setVec3("_KernelTop", postProcess.kernelTop);
-		screenShader.setVec3("_KernelCenter", postProcess.kernelCenter);
-		screenShader.setVec3("_KernelBottom", postProcess.kernelBottom);
+		screenShader.setInt("_InverseOn",		postProcess.inverse);
+		screenShader.setInt("_EffectNumber",	postProcess.effectNumber);
+		screenShader.setFloat("_BlurAmount",	postProcess.blurAmount);
+		screenShader.setVec3("_KernelTop",		postProcess.kernelTop);
+		screenShader.setVec3("_KernelCenter",	postProcess.kernelCenter);
+		screenShader.setVec3("_KernelBottom",	postProcess.kernelBottom);
+		screenShader.setInt("_ColorBuffer",		framebuffer.colorBuffer);	// Not working properly
+		screenShader.setInt("_DepthBuffer",		framebuffer.depthBuffer);	// Not working properly
 
 		glBindVertexArray(quadVAO);
 		glDisable(GL_DEPTH_TEST);
@@ -209,10 +213,11 @@ void drawUI() {
 		static int e = 0;
 		ImGui::RadioButton("Kernels", &e, 0);
 		ImGui::RadioButton("Box Blur", &e, 1);
+		ImGui::RadioButton("Gamma Correction", &e, 2);
+		ImGui::RadioButton("sRGB Correction", &e, 3);
 
 		if (e == 0) {
 			postProcess.effectNumber = 0;
-
 			if (ImGui::CollapsingHeader("Kernel Effects")) {
 				static int k = 0;
 				ImGui::RadioButton("None", &k, 0);
@@ -220,37 +225,55 @@ void drawUI() {
 				ImGui::RadioButton("Blur", &k, 2);
 				ImGui::RadioButton("Emboss", &k, 3);
 				ImGui::RadioButton("Outline", &k, 4);
+				ImGui::RadioButton("Edge Detect", &k, 5);
 
 				if (k == 0) {
+					//Identity Kernel
 					postProcess.kernelTop =		glm::vec3(0, 0, 0);
 					postProcess.kernelCenter =	glm::vec3(0, 1, 0);
 					postProcess.kernelBottom =	glm::vec3(0, 0, 0);
 				}
 				if (k == 1) {
+					//Sharpen Kernel
 					postProcess.kernelTop =		glm::vec3(0, -1, 0);
 					postProcess.kernelCenter =	glm::vec3(-1, 5, -1);
 					postProcess.kernelBottom =	glm::vec3(0, -1, 0);
 				}
 				if (k == 2) {
+					//Blur Kernel
 					postProcess.kernelTop =		glm::vec3(0.0625, 0.125, 0.0625);
-					postProcess.kernelCenter =	glm::vec3(0.125, 0.25, 0.125);
+					postProcess.kernelCenter =	glm::vec3(0.125,  0.25,  0.125);
 					postProcess.kernelBottom =	glm::vec3(0.0625, 0.125, 0.0625);
 				}
 				if (k == 3) {
-					postProcess.kernelTop =		glm::vec3(-2, -1, 0);
-					postProcess.kernelCenter =	glm::vec3(-1, 1, 1);
-					postProcess.kernelBottom =	glm::vec3(0, 1, 2);
+					//Emboss Kernel
+					postProcess.kernelTop =		glm::vec3(-1, 1, -1);
+					postProcess.kernelCenter =	glm::vec3(1,  1, 1);
+					postProcess.kernelBottom =	glm::vec3(-1,   1, -1);
 				}
 				if (k == 4) {
+					//Outline Kernel
 					postProcess.kernelTop =		glm::vec3(-1, -1, -1);
-					postProcess.kernelCenter =	glm::vec3(-1, 8, -1);
+					postProcess.kernelCenter =	glm::vec3(-1,  8, -1);
 					postProcess.kernelBottom =	glm::vec3(-1, -1, -1);
+				}
+				if (k == 5) {
+					//Edge Detect Kernel
+					postProcess.kernelTop =		glm::vec3(1,  1, 1);
+					postProcess.kernelCenter =	glm::vec3(1, -8, 1);
+					postProcess.kernelBottom =	glm::vec3(1,  1, 1);
 				}
 			}
 		}
 		else if (e == 1) {
 			postProcess.effectNumber = 1;
 			ImGui::SliderFloat("Blur Amount", &postProcess.blurAmount, 0.0f, 5.0f);
+		}
+		else if (e == 2) {
+			postProcess.effectNumber = 2;
+		}
+		else if (e == 3) {
+			postProcess.effectNumber = 3;
 		}
 	}
 
