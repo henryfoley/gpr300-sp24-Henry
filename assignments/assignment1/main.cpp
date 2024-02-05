@@ -42,6 +42,7 @@ struct Material {
 struct PostProcess
 {
 	bool inverse = 0;
+	float blurAmount = 1.0;
 }postProcess;
 
 //Creating Frame Buffer Quad
@@ -160,6 +161,7 @@ int main() {
 
 		screenShader.use();
 		screenShader.setInt("_InverseOn", postProcess.inverse);
+		screenShader.setFloat("_BlurAmount", postProcess.blurAmount);
 
 		glBindVertexArray(quadVAO);
 		glDisable(GL_DEPTH_TEST);
@@ -196,6 +198,7 @@ void drawUI() {
 	}
 	if (ImGui::CollapsingHeader("Post Process")) {
 		ImGui::Checkbox("Inverse Colors", &postProcess.inverse);
+		ImGui::SliderFloat("Blur Amount", &postProcess.blurAmount, 0.0f, 5.0f);
 	}
 
 	ImGui::Text("Add Controls Here!");
