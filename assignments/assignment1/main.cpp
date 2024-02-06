@@ -78,12 +78,8 @@ int main() {
 	ew::Model monkeyModel = ew::Model("assets/Suzanne.fbx");
 	ew::Transform monkeyTransform;
 
-	//Set Shader Params
+	//Set Shader
 	shader.use();
-	shader.setMat4("_Model", glm::mat4(1.0f));
-	shader.setInt("_MainTex", 0);
-	shader.setInt("_NormalTex", 1);
-	shader.setVec3("_EyePos", camera.position);
 
 	//Textures
 	GLuint monkeyTexture = ew::loadTexture("assets/monkey_color.jpg");
@@ -135,8 +131,12 @@ int main() {
 		//Bind Texture
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, monkeyTexture);
-		//glActiveTexture(GL_TEXTURE1);		//todo fix!
-		//glBindTexture(GL_TEXTURE_2D, monkeyNormal);
+		shader.setInt("_MainTex", 0);
+		glActiveTexture(GL_TEXTURE1);		//todo fix!
+		glBindTexture(GL_TEXTURE_2D, monkeyNormal);
+		shader.setInt("_NormalTex", 1);
+		shader.setMat4("_Model", glm::mat4(1.0f));
+		shader.setVec3("_EyePos", camera.position);
 
 		//Draw Scene
 		//Camera Controller
@@ -166,18 +166,19 @@ int main() {
 
 		//Post Processing Effects
 		screenShader.use();
+		glBindTextureUnit(0, (GLuint)framebuffer.colorBuffer);
 		screenShader.setInt("_InverseOn",		postProcess.inverse);
 		screenShader.setInt("_EffectNumber",	postProcess.effectNumber);
 		screenShader.setFloat("_BlurAmount",	postProcess.blurAmount);
 		screenShader.setVec3("_KernelTop",		postProcess.kernelTop);
 		screenShader.setVec3("_KernelCenter",	postProcess.kernelCenter);
 		screenShader.setVec3("_KernelBottom",	postProcess.kernelBottom);
-		screenShader.setInt("_ColorBuffer",		framebuffer.colorBuffer);	// Not working properly
+		screenShader.setInt("_ColorBuffer",		0);	// Not working properly
+		glBindTextureUnit(1, (GLuint)framebuffer.depthBuffer);
 		screenShader.setInt("_DepthBuffer",		framebuffer.depthBuffer);	// Not working properly
 
 		glBindVertexArray(quadVAO);
 		glDisable(GL_DEPTH_TEST);
-		glBindTexture(GL_TEXTURE_2D, (GLuint)framebuffer.colorBuffer);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		drawUI();
