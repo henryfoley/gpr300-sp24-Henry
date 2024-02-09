@@ -63,6 +63,11 @@ float quadVertices[] =
 	 1.0f,	1.0f,	1.0f, 1.0f
 };
 
+void drawScene() {
+
+
+
+}
 
 int main() {
 	GLFWwindow* window = initWindow("Assignment 0", screenWidth, screenHeight);
@@ -73,10 +78,14 @@ int main() {
 	camera.aspectRatio = (float)screenWidth / screenHeight;
 	camera.fov = 60.0f;
 
-	//Shader, Model, and Transform
+	// Monkey Shader, Model, and Transform
 	ew::Shader shader = ew::Shader("assets/lit.vert", "assets/lit.frag");
 	ew::Model monkeyModel = ew::Model("assets/Suzanne.fbx");
 	ew::Transform monkeyTransform;
+
+	// Ground Plane Shader, Model, and Transform
+	ew::Mesh planeMesh = ew::Mesh(ew::createPlane(10, 10, 5));
+	ew::Transform planeTransform;
 
 	//Set Shader
 	shader.use();
@@ -84,6 +93,8 @@ int main() {
 	//Textures
 	GLuint monkeyTexture = ew::loadTexture("assets/monkey_color.jpg");
 	GLuint monkeyNormal = ew::loadTexture("assets/monkey_normal.jpg");
+	GLuint concreteTexture = ew::loadTexture("assets/concrete_color.jpg");
+	GLuint concreteNormal = ew::loadTexture("assets/concrete_normal.jpg");
 
 	//Create Framebuffer Screen Quad
 	unsigned int quadVAO, quadVBO;
@@ -128,20 +139,18 @@ int main() {
 		//Use Model Shader
 		shader.use();
 
-		//Bind Texture
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, monkeyTexture);
-		shader.setInt("_MainTex", 0);
-		glActiveTexture(GL_TEXTURE1);		//todo fix!
-		glBindTexture(GL_TEXTURE_2D, monkeyNormal);
-		shader.setInt("_NormalTex", 1);
-		shader.setMat4("_Model", glm::mat4(1.0f));
-		shader.setVec3("_EyePos", camera.position);
-
-		//Draw Scene
 		//Camera Controller
 		cameraController.move(window, &camera, deltaTime);
 		shader.setMat4("_ViewProjection", camera.projectionMatrix() * camera.viewMatrix());
+		shader.setVec3("_EyePos", camera.position);
+		shader.setMat4("_Model", glm::mat4(1.0f));
+
+		//Monkey
+		//Bind Texture
+		glBindTextureUnit(0, monkeyTexture);
+		shader.setInt("_MainTex", 0);
+		glBindTextureUnit(1, monkeyNormal);
+		shader.setInt("_NormalTex", 1);
 
 		//Rotate model around Y axis
 		monkeyTransform.rotation = glm::rotate(monkeyTransform.rotation, deltaTime, glm::vec3(0.0, 1.0, 0.0));
@@ -149,15 +158,36 @@ int main() {
 		//transform.modelMatrix() combines translation, rotation, and scale into a 4x4 model matrix
 		shader.setMat4("_Model", monkeyTransform.modelMatrix());
 
-		//Set Material Properties
+		//Set Monkey Material Properties
 		shader.setFloat("_Material.Ka", material.Ka);
 		shader.setFloat("_Material.Kd", material.Kd);
 		shader.setFloat("_Material.Ks", material.Ks);
 		shader.setFloat("_Material.Shininess", material.Shininess);
 		shader.setFloat("_Material.Shininess", material.Shininess);
 
-		//Draw Mesh to Screen
+		//Draw Monkey
 		monkeyModel.draw();
+
+		//Plane
+		//Bind Texture
+		glBindTextureUnit(0, concreteTexture);
+		glBindTextureUnit(1, concreteNormal);
+
+		//Set Plane Transform
+		planeTransform.position = glm::vec3(0, -1, 0);
+
+		//Set Plane Model
+		shader.setMat4("_Model", planeTransform.modelMatrix());
+
+		//Set Plane Material Properties
+		shader.setFloat("_Material.Ka", material.Ka);
+		shader.setFloat("_Material.Kd", material.Kd);
+		shader.setFloat("_Material.Ks", material.Ks);
+		shader.setFloat("_Material.Shininess", material.Shininess);
+		shader.setFloat("_Material.Shininess", material.Shininess);
+
+		//Draw Plane Mesh to Screen
+		planeMesh.draw();
 
 		//Second Pass
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
