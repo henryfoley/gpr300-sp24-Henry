@@ -30,6 +30,14 @@ float deltaTime;
 ew::Camera camera;
 ew::CameraController cameraController;
 
+//Light uniforms
+glm::vec3 lightDirection = glm::vec3(0.0, -1.0, 0.0);
+glm::vec3 lightColor = glm::vec3(1.0);
+glm::vec3 lightPos = glm::vec3(1.0);
+
+//Shadow Map Framebuffer
+hfLib::Framebuffer shadowMap;
+
 //Material
 struct Material {
 	float Ka = 1.0;
@@ -63,7 +71,7 @@ float quadVertices[] =
 	 1.0f,	1.0f,	1.0f, 1.0f
 };
 
-void drawScene() {
+void drawScene() { //todo
 
 
 
@@ -130,6 +138,11 @@ int main() {
 		deltaTime = time - prevFrameTime;
 		prevFrameTime = time;
 
+		lightPos = monkeyTransform.position - lightDirection * 5.0f;
+
+		//Shadowmap buffer create
+		//shadowMap = ;
+		
 		//Render First Pass
 		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.fbo);
 		glClearColor(0.6f,0.8f,0.92f,1.0f);
@@ -144,6 +157,10 @@ int main() {
 		shader.setMat4("_ViewProjection", camera.projectionMatrix() * camera.viewMatrix());
 		shader.setVec3("_EyePos", camera.position);
 		shader.setMat4("_Model", glm::mat4(1.0f));
+
+		//Pass Light Uniforms
+		shader.setVec3("_LightDirection", lightDirection);
+		shader.setVec3("_LightColor", lightColor);
 
 		//Monkey
 		//Bind Texture
@@ -229,6 +246,7 @@ void drawUI() {
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui::NewFrame();
 
+	//Primary Controls
 	ImGui::Begin("Settings");
 	if (ImGui::Button("Reset Camera")) {
 		resetCamera(&camera, &cameraController);
@@ -238,6 +256,20 @@ void drawUI() {
 		ImGui::SliderFloat("DiffuseK", &material.Kd, 0.0f, 1.0f);
 		ImGui::SliderFloat("SpecularK", &material.Ks, 0.0f, 1.0f);
 		ImGui::SliderFloat("Shininess", &material.Shininess, 2.0f, 1024.0f);
+	}
+	if (ImGui::CollapsingHeader("Light")) {
+		ImGui::ColorEdit3("LighColor", &lightColor.x);
+
+		if(ImGui::SliderFloat3("Light Direction", &lightDirection.x, -1, 1));
+			if (glm::length(lightDirection.x) != 0)
+			{
+				lightDirection = glm::normalize(lightDirection);
+			}
+	}
+	if (ImGui::CollapsingHeader("Shadowmap")) {
+		//Camera near/ far plane, ortho view
+
+
 	}
 	if (ImGui::CollapsingHeader("Post Process")) {
 		ImGui::Checkbox("Inverse Colors", &postProcess.inverse);
@@ -307,6 +339,15 @@ void drawUI() {
 			postProcess.effectNumber = 3;
 		}
 	}
+
+	ImGui::End();
+
+	//Shadow Mapping Debug View
+	ImGui::Begin("Shadow Map");
+	ImGui::BeginChild("Shadow Map");
+	ImVec2 windowSize = ImGui::GetWindowSize();
+	ImGui::Image((ImTextureID)&shadowMap, windowSize, ImVec2(0, 1), ImVec2(1, 0));
+	ImGui::EndChild();
 
 	ImGui::End();
 

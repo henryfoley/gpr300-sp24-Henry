@@ -19,4 +19,5 @@ namespace hfLib {
 		unsigned int height;
 	};
 	Framebuffer createFramebuffer(unsigned int width, unsigned int height, int colorFormat);
+	Framebuffer createFramebuffer(unsigned int width, unsigned int height);
 }

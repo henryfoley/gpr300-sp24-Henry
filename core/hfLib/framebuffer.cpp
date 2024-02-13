@@ -3,7 +3,7 @@
 
 namespace hfLib {
 	Framebuffer hfLib::createFramebuffer(unsigned int width, unsigned int height, int colorFormat)
-	{	
+	{
 		//Create Framebuffer
 		Framebuffer framebuffer;
 
@@ -39,7 +39,32 @@ namespace hfLib {
 		glBindTexture(GL_TEXTURE_2D, framebuffer.depthBuffer);
 		glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT16, width, height);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, framebuffer.depthBuffer, 0);
-		
+
+		//Check if framebuffer is complete, if not output error code
+		auto framebufferStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		if (framebufferStatus != GL_FRAMEBUFFER_COMPLETE) {
+			std::cout << "FRAMEBUFFER ERROR: " << framebufferStatus << std::endl;
+		}
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		return framebuffer;
+	}
+
+	Framebuffer hfLib::createFramebuffer(unsigned int width, unsigned int height)
+	{
+		//Create Framebuffer
+		Framebuffer framebuffer;
+
+		//Depth Buffer
+		glGenTextures(1, &framebuffer.depthBuffer);
+		glBindTexture(GL_TEXTURE_2D, framebuffer.depthBuffer);
+		glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT16, width, height);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, framebuffer.depthBuffer, 0);
+
+		//Tell OpenGL not to render any Color Data
+		glDrawBuffer(GL_NONE);
+		glReadBuffer(GL_NONE);
+
 		//Check if framebuffer is complete, if not output error code
 		auto framebufferStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 		if (framebufferStatus != GL_FRAMEBUFFER_COMPLETE) {
