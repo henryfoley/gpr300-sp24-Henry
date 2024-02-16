@@ -12,6 +12,11 @@
 namespace ew {
 	ew::Mesh processAiMesh(aiMesh* aiMesh);
 
+	Model::Model(Mesh mesh)
+	{
+		m_meshes.push_back(mesh);
+	}
+
 	Model::Model(const std::string& filePath)
 	{
 		Assimp::Importer importer;

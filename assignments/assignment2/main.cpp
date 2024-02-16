@@ -32,6 +32,20 @@ ew::Camera shadowMapCamera;
 ew::CameraController cameraController;
 float lightCamDist = 6.0f;
 
+// Monkey Shader, Model, and Transform
+ew::Model monkeyModel;
+ew::Transform monkeyTransform;
+
+// Ground Plane Shader, Model, and Transform
+ew::Model planeModel;
+ew::Transform planeTransform;
+
+//Textures
+GLuint monkeyTexture;
+GLuint monkeyNormal;
+GLuint concreteTexture;
+GLuint concreteNormal;
+
 //Light uniforms
 glm::vec3 lightDirection = glm::vec3(0.0, -1.0, 0.0);
 glm::vec3 lightColor = glm::vec3(1.0);
@@ -82,27 +96,16 @@ void drawScene(ew::Shader shader, ew::Camera camera) {
 	//Setting View Projection
 	//Setting Model Matrix
 	//Mesh.draw() calls
+
+	shader.setMat4("_ViewProjection", camera.projectionMatrix() * camera.viewMatrix());
+	shader.setMat4("_Model", glm::mat4(1.0f));
 }
 
 int main() {
 	GLFWwindow* window = initWindow("Assignment 0", screenWidth, screenHeight);
 
-	// Monkey Shader, Model, and Transform
-	ew::Model monkeyModel = ew::Model("assets/Suzanne.fbx");
-	ew::Transform monkeyTransform;
-
-	// Ground Plane Shader, Model, and Transform
-	ew::Mesh planeMesh = ew::Mesh(ew::createPlane(10, 10, 5));
-	ew::Transform planeTransform;
-
 	//Set Shader
 	shader.use();
-
-	//Textures
-	GLuint monkeyTexture = ew::loadTexture("assets/monkey_color.jpg");
-	GLuint monkeyNormal = ew::loadTexture("assets/monkey_normal.jpg");
-	GLuint concreteTexture = ew::loadTexture("assets/concrete_color.jpg");
-	GLuint concreteNormal = ew::loadTexture("assets/concrete_normal.jpg");
 
 	//Set Camera variables
 	camera.position = glm::vec3(0.0f, 0.0f, 5.0f);
@@ -118,10 +121,20 @@ int main() {
 	shadowMapCamera.farPlane = 6.0f;
 	shadowMapCamera.position = shadowMapCamera.target - lightDirection * lightCamDist;
 
+	// Monkey Shader, Model, and Transform
+	monkeyModel = ew::Model("assets/Suzanne.fbx");
+
+	// Ground Plane Shader, Model, and Transform
+	planeModel = ew::Model(ew::Mesh(ew::createPlane(10, 10, 5)));
+
+	//Textures
+	monkeyTexture = ew::loadTexture("assets/monkey_color.jpg");
+	monkeyNormal = ew::loadTexture("assets/monkey_normal.jpg");
+	concreteTexture = ew::loadTexture("assets/concrete_color.jpg");
+	concreteNormal = ew::loadTexture("assets/concrete_normal.jpg");
 
 	//Light Space Transform
 	glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, shadowMapCamera.nearPlane, shadowMapCamera.farPlane);
-
 
 	//Create Framebuffer Screen Quad
 	unsigned int quadVAO, quadVBO;
@@ -231,7 +244,7 @@ int main() {
 		shader.setFloat("_Material.Shininess", material.Shininess);
 
 		//Draw Plane Mesh to Screen
-		planeMesh.draw();
+		planeModel.draw();
 
 
 		// DON'T TOUCH BEYOND THIS POINT
