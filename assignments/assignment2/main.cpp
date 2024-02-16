@@ -28,15 +28,20 @@ float deltaTime;
 
 //Create Camera and Camera Transform
 ew::Camera camera;
+ew::Camera shadowMapCamera;
 ew::CameraController cameraController;
+float lightCamDist = 6.0f;
 
 //Light uniforms
 glm::vec3 lightDirection = glm::vec3(0.0, -1.0, 0.0);
 glm::vec3 lightColor = glm::vec3(1.0);
 glm::vec3 lightPos = glm::vec3(1.0);
 
-//Shadow Map Framebuffer
-hfLib::Framebuffer shadowMap;
+//Shadowmap Framebuffer
+hfLib::Framebuffer shadowMapFramebuffer;
+
+//Lit Scene Shader
+ew::Shader shader = ew::Shader("assets/lit.vert", "assets/lit.frag");
 
 //Material
 struct Material {
@@ -71,23 +76,18 @@ float quadVertices[] =
 	 1.0f,	1.0f,	1.0f, 1.0f
 };
 
-void drawScene() { //todo
+void drawScene(ew::Shader shader, ew::Camera camera) {
 
-
-
+	//Binding Textures
+	//Setting View Projection
+	//Setting Model Matrix
+	//Mesh.draw() calls
 }
 
 int main() {
 	GLFWwindow* window = initWindow("Assignment 0", screenWidth, screenHeight);
 
-	//Set Camera variables
-	camera.position = glm::vec3(0.0f, 0.0f, 5.0f);
-	camera.target = glm::vec3(0.0f, 0.0f, 0.0f);
-	camera.aspectRatio = (float)screenWidth / screenHeight;
-	camera.fov = 60.0f;
-
 	// Monkey Shader, Model, and Transform
-	ew::Shader shader = ew::Shader("assets/lit.vert", "assets/lit.frag");
 	ew::Model monkeyModel = ew::Model("assets/Suzanne.fbx");
 	ew::Transform monkeyTransform;
 
@@ -103,6 +103,25 @@ int main() {
 	GLuint monkeyNormal = ew::loadTexture("assets/monkey_normal.jpg");
 	GLuint concreteTexture = ew::loadTexture("assets/concrete_color.jpg");
 	GLuint concreteNormal = ew::loadTexture("assets/concrete_normal.jpg");
+
+	//Set Camera variables
+	camera.position = glm::vec3(0.0f, 0.0f, 5.0f);
+	camera.target = glm::vec3(0.0f, 0.0f, 0.0f);
+	camera.aspectRatio = (float)screenWidth / screenHeight;
+	camera.fov = 60.0f;
+
+	//Shadow Map Cameras
+	shadowMapCamera.position = lightPos;
+	shadowMapCamera.target = monkeyTransform.position;
+	shadowMapCamera.aspectRatio = 1.0f;
+	shadowMapCamera.fov = 60.0f;
+	shadowMapCamera.farPlane = 6.0f;
+	shadowMapCamera.position = shadowMapCamera.target - lightDirection * lightCamDist;
+
+
+	//Light Space Transform
+	glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, shadowMapCamera.nearPlane, shadowMapCamera.farPlane);
+
 
 	//Create Framebuffer Screen Quad
 	unsigned int quadVAO, quadVBO;
@@ -123,6 +142,9 @@ int main() {
 	screenShader.setInt("_ScreenTexture", 0);
 	hfLib::Framebuffer framebuffer = hfLib::createFramebuffer(screenWidth, screenHeight, GL_RGB16F);
 
+	//Shadowmap Configuration
+	shadowMapFramebuffer = hfLib::createFramebuffer(screenWidth, screenHeight);
+
 	//Global OpenGL Variables
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK); //Back face culling
@@ -140,8 +162,13 @@ int main() {
 
 		lightPos = monkeyTransform.position - lightDirection * 5.0f;
 
-		//Shadowmap buffer create
-		//shadowMap = ;
+		//Shadowmap draw
+		glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFramebuffer.fbo);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		//Draw
+		//If specific to pass, like passing specific variable, then do that outside of drawScene()
 		
 		//Render First Pass
 		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.fbo);
@@ -206,6 +233,8 @@ int main() {
 		//Draw Plane Mesh to Screen
 		planeMesh.draw();
 
+
+		// DON'T TOUCH BEYOND THIS POINT
 		//Second Pass
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -248,8 +277,12 @@ void drawUI() {
 
 	//Primary Controls
 	ImGui::Begin("Settings");
-	if (ImGui::Button("Reset Camera")) {
-		resetCamera(&camera, &cameraController);
+	if (ImGui::CollapsingHeader("Camera Controls")) {
+		if (ImGui::Button("Reset Camera")) {
+			resetCamera(&camera, &cameraController);
+		}
+		ImGui::Checkbox("Orthographic", &camera.orthographic);
+		ImGui::SliderFloat("CameraFOV", &camera.fov, 60.0f, 120.0f);
 	}
 	if (ImGui::CollapsingHeader("Material")) {
 		ImGui::SliderFloat("AmbientK", &material.Ka, 0.0f, 1.0f);
@@ -346,7 +379,7 @@ void drawUI() {
 	ImGui::Begin("Shadow Map");
 	ImGui::BeginChild("Shadow Map");
 	ImVec2 windowSize = ImGui::GetWindowSize();
-	ImGui::Image((ImTextureID)&shadowMap, windowSize, ImVec2(0, 1), ImVec2(1, 0));
+	ImGui::Image((ImTextureID)&shadowMapFramebuffer, windowSize, ImVec2(0, 1), ImVec2(1, 0));
 	ImGui::EndChild();
 
 	ImGui::End();
