@@ -10,6 +10,7 @@
 #include <ew/texture.h>
 #include <ew/procGen.h>
 #include <hfLib/framebuffer.h>
+#include <hfLib/scene.h>
 
 #include <GLFW/glfw3.h>
 #include <imgui.h>
@@ -32,19 +33,13 @@ ew::Camera shadowMapCamera;
 ew::CameraController cameraController;
 float lightCamDist = 6.0f;
 
-// Monkey Shader, Model, and Transform
-ew::Model monkeyModel;
-ew::Transform monkeyTransform;
-
-// Ground Plane Shader, Model, and Transform
-ew::Model planeModel;
-ew::Transform planeTransform;
-
 //Textures
 GLuint monkeyTexture;
 GLuint monkeyNormal;
 GLuint concreteTexture;
 GLuint concreteNormal;
+std::vector<GLuint> monkeyTextures;
+std::vector<GLuint> concreteTextures;
 
 //Light uniforms
 glm::vec3 lightDirection = glm::vec3(0.0, -1.0, 0.0);
@@ -53,9 +48,10 @@ glm::vec3 lightPos = glm::vec3(1.0);
 
 //Shadowmap Framebuffer
 hfLib::Framebuffer shadowMapFramebuffer;
+hfLib::Framebuffer framebuffer;
 
-//Lit Scene Shader
-ew::Shader shader = ew::Shader("assets/lit.vert", "assets/lit.frag");
+//Create Scene
+hfLib::Scene scene;
 
 //Material
 struct Material {
@@ -90,22 +86,26 @@ float quadVertices[] =
 	 1.0f,	1.0f,	1.0f, 1.0f
 };
 
-void drawScene(ew::Shader shader, ew::Camera camera) {
-
-	//Binding Textures
-	//Setting View Projection
-	//Setting Model Matrix
-	//Mesh.draw() calls
-
-	shader.setMat4("_ViewProjection", camera.projectionMatrix() * camera.viewMatrix());
-	shader.setMat4("_Model", glm::mat4(1.0f));
-}
-
 int main() {
 	GLFWwindow* window = initWindow("Assignment 0", screenWidth, screenHeight);
 
+	//Lit Scene Shader
+	ew::Shader shader = ew::Shader("assets/lit.vert", "assets/lit.frag");
+	// Post Process Shader
+	ew::Shader screenShader = ew::Shader("assets/postProcess.vert", "assets/postProcess.frag");
+	// Shadow Map Shader
+	ew::Shader shadowMapShader = ew::Shader("assets/depthOnly.vert", "assets/depthOnly.frag");
+
 	//Set Shader
 	shader.use();
+
+	// Monkey Shader, Model, and Transform
+	ew::Model monkeyModel = ew::Model("assets/Suzanne.fbx");
+	ew::Transform monkeyTransform;
+
+	// Ground Plane Shader, Model, and Transform
+	ew::Model planeModel = ew::Model(ew::Mesh(ew::createPlane(10, 10, 5)));
+	ew::Transform planeTransform;
 
 	//Set Camera variables
 	camera.position = glm::vec3(0.0f, 0.0f, 5.0f);
@@ -121,20 +121,31 @@ int main() {
 	shadowMapCamera.farPlane = 6.0f;
 	shadowMapCamera.position = shadowMapCamera.target - lightDirection * lightCamDist;
 
-	// Monkey Shader, Model, and Transform
-	monkeyModel = ew::Model("assets/Suzanne.fbx");
-
-	// Ground Plane Shader, Model, and Transform
-	planeModel = ew::Model(ew::Mesh(ew::createPlane(10, 10, 5)));
-
 	//Textures
+	//Monkey Textures
 	monkeyTexture = ew::loadTexture("assets/monkey_color.jpg");
 	monkeyNormal = ew::loadTexture("assets/monkey_normal.jpg");
+	monkeyTextures.push_back(monkeyTexture);
+	monkeyTextures.push_back(monkeyNormal);
+	//Concrete Textures
 	concreteTexture = ew::loadTexture("assets/concrete_color.jpg");
 	concreteNormal = ew::loadTexture("assets/concrete_normal.jpg");
+	concreteTextures.push_back(concreteTexture);
+	concreteTextures.push_back(concreteNormal);
 
 	//Light Space Transform
 	glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, shadowMapCamera.nearPlane, shadowMapCamera.farPlane);
+
+	//Add Scene Assets
+
+
+	hfLib::SceneAsset monkeyAsset = hfLib::SceneAsset(monkeyModel, monkeyTransform, monkeyTextures);
+	hfLib::SceneAsset planeAsset = hfLib::SceneAsset(planeModel, planeTransform, concreteTextures);
+
+	//Add Assets to Scene
+	scene.addAsset(monkeyAsset);
+
+
 
 	//Create Framebuffer Screen Quad
 	unsigned int quadVAO, quadVBO;
@@ -150,10 +161,9 @@ int main() {
 
 	//Framebuffer shader configuration
 	GLenum attachments[1] = { GL_COLOR_ATTACHMENT0 };
-	ew::Shader screenShader = ew::Shader("assets/postProcess.vert", "assets/postProcess.frag");
 	screenShader.use();
 	screenShader.setInt("_ScreenTexture", 0);
-	hfLib::Framebuffer framebuffer = hfLib::createFramebuffer(screenWidth, screenHeight, GL_RGB16F);
+	framebuffer = hfLib::createFramebuffer(screenWidth, screenHeight, GL_RGB16F);
 
 	//Shadowmap Configuration
 	shadowMapFramebuffer = hfLib::createFramebuffer(screenWidth, screenHeight);
@@ -179,6 +189,7 @@ int main() {
 		glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFramebuffer.fbo);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		scene.draw(shadowMapShader, shadowMapCamera);
 
 		//Draw
 		//If specific to pass, like passing specific variable, then do that outside of drawScene()
