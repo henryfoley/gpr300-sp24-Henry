@@ -38,7 +38,7 @@ namespace hfLib {
 		glGenTextures(1, &framebuffer.depthBuffer);
 		glBindTexture(GL_TEXTURE_2D, framebuffer.depthBuffer);
 		glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT16, width, height);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, framebuffer.depthBuffer, 0);
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, framebuffer.depthBuffer, 0);
 
 		//Check if framebuffer is complete, if not output error code
 		auto framebufferStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);

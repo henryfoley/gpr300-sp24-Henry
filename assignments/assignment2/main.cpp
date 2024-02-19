@@ -184,8 +184,8 @@ int main() {
 		deltaTime = time - prevFrameTime;
 		prevFrameTime = time;
 
-		lightPos = monkeyTransform.position - lightDirection * 5.0f;
-		glm::mat4 lightView = glm::lookAt(lightPos, monkeyTransform.position, glm::vec3(0.0, 1.0, 0.0));
+		lightPos = scene.getAsset(0).getTransform().position - lightDirection * 5.0f;	
+		glm::mat4 lightView = glm::lookAt(lightPos, scene.getAsset(0).getTransform().position, glm::vec3(0.0, 1.0, 0.0));
 		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 		shadowMapCamera.viewMatrix() = lightSpaceMatrix;
 
@@ -428,8 +428,8 @@ void drawUI() {
 	ImGui::Begin("Shadow Map");
 	ImGui::BeginChild("Shadow Map");
 	ImVec2 windowSize = ImGui::GetWindowSize();
-	//ImGui::Image((ImTextureID)framebuffer.colorBuffer, windowSize, ImVec2(0, 1), ImVec2(1, 0));
-	ImGui::Image((ImTextureID)shadowMapFramebuffer.depthBuffer, windowSize, ImVec2(0, 1), ImVec2(1, 0));
+	ImGui::Image((ImTextureID)framebuffer.depthBuffer, windowSize, ImVec2(0, 1), ImVec2(1, 0));
+	//ImGui::Image((ImTextureID)shadowMapFramebuffer.depthBuffer, windowSize, ImVec2(0, 1), ImVec2(1, 0));
 	//ImGui::Image((ImTextureID)shadowTextureID, windowSize, ImVec2(0, 1), ImVec2(1, 0));
 	ImGui::EndChild();
 
