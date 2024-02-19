@@ -137,13 +137,12 @@ int main() {
 	glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, shadowMapCamera.nearPlane, shadowMapCamera.farPlane);
 
 	//Add Scene Assets
-
-
 	hfLib::SceneAsset monkeyAsset = hfLib::SceneAsset(monkeyModel, monkeyTransform, monkeyTextures);
 	hfLib::SceneAsset planeAsset = hfLib::SceneAsset(planeModel, planeTransform, concreteTextures);
 
 	//Add Assets to Scene
 	scene.addAsset(monkeyAsset);
+	scene.addAsset(planeAsset);
 
 
 
@@ -199,7 +198,9 @@ int main() {
 		glClearColor(0.6f,0.8f,0.92f,1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
-
+		scene.draw(shader, camera);
+		
+		//OLD CODE
 		//Use Model Shader
 		shader.use();
 

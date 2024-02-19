@@ -11,11 +11,9 @@
 #include "../ew/model.h"
 #include "../ew/shader.h"
 #include "../ew/camera.h"
+#include "../ew/transform.h"
 
 namespace hfLib {
-	struct SceneAsset {
-
-	};
 	class SceneAsset
 	{
 	public:
@@ -24,6 +22,9 @@ namespace hfLib {
 		void addModel(ew::Model model);
 		void addTransform(ew::Transform transform);
 		void addTexture(GLuint texture);
+		ew::Model getModel();
+		ew::Transform getTransform();
+		std::vector<GLuint> getTextures();
 
 	private:
 		ew::Model model;

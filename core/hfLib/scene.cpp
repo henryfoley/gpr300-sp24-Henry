@@ -27,6 +27,21 @@ namespace hfLib {
 	{
 		textures.push_back(texture);
 	}
+
+	ew::Model SceneAsset::getModel()
+	{
+		return model;
+	}
+
+	ew::Transform SceneAsset::getTransform()
+	{
+		return transform;
+	}
+
+	std::vector<GLuint> SceneAsset::getTextures()
+	{
+		return textures;
+	}
 	
 	// Scene
 	Scene::Scene(std::vector<SceneAsset> assets)
@@ -49,13 +64,16 @@ namespace hfLib {
 		//Binding Shader
 		shader.use();
 
-
 		shader.setMat4("_ViewProjection", camera.projectionMatrix() * camera.viewMatrix());
 		shader.setMat4("_Model", glm::mat4(1.0f));
 
 		for (auto asset : assets)
 		{
-			asset.model.draw();
+			glBindTextureUnit(0, asset.getTextures()[0]);
+			shader.setInt("_MainTex", 0);
+			glBindTextureUnit(1, asset.getTextures()[1]);
+			shader.setInt("_NormalTex", 1);
+			asset.getModel().draw();
 		}
 
 		//Binding Textures

@@ -12,6 +12,10 @@
 namespace ew {
 	ew::Mesh processAiMesh(aiMesh* aiMesh);
 
+	Model::Model()
+	{
+		m_meshes.push_back(Mesh());	
+	}
 	Model::Model(Mesh mesh)
 	{
 		m_meshes.push_back(mesh);
