@@ -61,8 +61,7 @@ namespace hfLib {
 
 	void Scene::draw(ew::Shader shader, ew::Camera camera)
 	{
-		//Binding Shader
-		shader.use();
+		//shader.use();
 
 		shader.setMat4("_ViewProjection", camera.projectionMatrix() * camera.viewMatrix());
 		shader.setMat4("_Model", glm::mat4(1.0f));
@@ -73,6 +72,9 @@ namespace hfLib {
 			shader.setInt("_MainTex", 0);
 			glBindTextureUnit(1, asset.getTextures()[1]);
 			shader.setInt("_NormalTex", 1);
+
+			shader.setMat4("_Model", asset.getTransform().modelMatrix());
+
 			asset.getModel().draw();
 		}
 
@@ -80,5 +82,10 @@ namespace hfLib {
 		//Setting View Projection
 		//Setting Model Matrix
 		//Mesh.draw() calls
+	}
+
+	SceneAsset Scene::getAsset(int index)
+	{
+		return assets[index];
 	}
 }

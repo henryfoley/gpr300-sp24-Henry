@@ -60,8 +60,8 @@ namespace hfLib {
 		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.fbo);
 
 		//Create Single Depth Buffer
-		glGenTextures(1, &framebuffer.fbo);
-		glBindTexture(GL_TEXTURE_2D, framebuffer.fbo);
+		glGenTextures(1, &framebuffer.depthBuffer);
+		glBindTexture(GL_TEXTURE_2D, framebuffer.depthBuffer);
 		glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH_COMPONENT16, width, height);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -69,11 +69,12 @@ namespace hfLib {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
 		float borderColor[4] = { 1.0f,1.0f,1.0f,1.0f };
 		glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, framebuffer.fbo, 0);
+		glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, framebuffer.depthBuffer, 0);
 
 		//Tell OpenGL not to render any Color Data
 		glDrawBuffer(GL_NONE);
 		glReadBuffer(GL_NONE);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 		//Check if framebuffer is complete, if not output error code
 		auto framebufferStatus = glCheckFramebufferStatus(GL_FRAMEBUFFER);

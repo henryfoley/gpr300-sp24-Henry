@@ -43,6 +43,7 @@ namespace hfLib {
 			void addAsset(SceneAsset asset);
 			void removeAsset(int index);
 			void draw(ew::Shader shader, ew::Camera camera);
+			SceneAsset getAsset(int index);
 	};
 
 }

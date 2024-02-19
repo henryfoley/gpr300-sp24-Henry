@@ -106,6 +106,8 @@ int main() {
 	// Ground Plane Shader, Model, and Transform
 	ew::Model planeModel = ew::Model(ew::Mesh(ew::createPlane(10, 10, 5)));
 	ew::Transform planeTransform;
+	//Set Plane Transform
+	planeTransform.position = glm::vec3(0, -1, 0);
 
 	//Set Camera variables
 	camera.position = glm::vec3(0.0f, 0.0f, 5.0f);
@@ -183,11 +185,17 @@ int main() {
 		prevFrameTime = time;
 
 		lightPos = monkeyTransform.position - lightDirection * 5.0f;
+		glm::mat4 lightView = glm::lookAt(lightPos, monkeyTransform.position, glm::vec3(0.0, 1.0, 0.0));
+		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+		shadowMapCamera.viewMatrix() = lightSpaceMatrix;
 
 		//Shadowmap draw
+        // Set the viewport settings
+        glViewport(0, 0, screenWidth, screenHeight);
 		glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFramebuffer.fbo);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClear(GL_DEPTH_BUFFER_BIT);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		shadowMapCamera.projectionMatrix() = lightProjection;
 		scene.draw(shadowMapShader, shadowMapCamera);
 
 		//Draw
@@ -198,65 +206,81 @@ int main() {
 		glClearColor(0.6f,0.8f,0.92f,1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glEnable(GL_DEPTH_TEST);
+		
+		shader.use();
+		
+		// Custom Shader Uniforms
+		shader.setFloat("_Material.Ka", material.Ka);
+		shader.setFloat("_Material.Kd", material.Kd);
+		shader.setFloat("_Material.Ks", material.Ks);
+		shader.setFloat("_Material.Shininess", material.Shininess);
+		shader.setFloat("_Material.Shininess", material.Shininess);
+		
+		cameraController.move(window, &camera, deltaTime);
+		shader.setVec3("_EyePos", camera.position);
+
+		//Not Working ATM
+		scene.getAsset(0).getTransform().rotation = glm::rotate(scene.getAsset(0).getTransform().rotation, deltaTime, glm::vec3(0.0, 1.0, 0.0));
+		monkeyTransform.rotation = glm::rotate(monkeyTransform.rotation, deltaTime, glm::vec3(0.0, 1.0, 0.0));
+
+		shader.setVec3("_LightDirection", lightDirection);
+		shader.setVec3("_LightColor", lightColor);
+		
 		scene.draw(shader, camera);
 		
 		//OLD CODE
 		//Use Model Shader
-		shader.use();
+	
 
 		//Camera Controller
-		cameraController.move(window, &camera, deltaTime);
-		shader.setMat4("_ViewProjection", camera.projectionMatrix() * camera.viewMatrix());
-		shader.setVec3("_EyePos", camera.position);
-		shader.setMat4("_Model", glm::mat4(1.0f));
+		
+		//shader.setMat4("_ViewProjection", camera.projectionMatrix() * camera.viewMatrix());
+		
+		//shader.setMat4("_Model", glm::mat4(1.0f));
 
 		//Pass Light Uniforms
-		shader.setVec3("_LightDirection", lightDirection);
-		shader.setVec3("_LightColor", lightColor);
+
 
 		//Monkey
 		//Bind Texture
-		glBindTextureUnit(0, monkeyTexture);
-		shader.setInt("_MainTex", 0);
-		glBindTextureUnit(1, monkeyNormal);
-		shader.setInt("_NormalTex", 1);
+		//glBindTextureUnit(0, monkeyTexture);
+		//shader.setInt("_MainTex", 0);
+		//glBindTextureUnit(1, monkeyNormal);
+		//shader.setInt("_NormalTex", 1);
 
 		//Rotate model around Y axis
-		monkeyTransform.rotation = glm::rotate(monkeyTransform.rotation, deltaTime, glm::vec3(0.0, 1.0, 0.0));
+		
 
 		//transform.modelMatrix() combines translation, rotation, and scale into a 4x4 model matrix
-		shader.setMat4("_Model", monkeyTransform.modelMatrix());
+		//shader.setMat4("_Model", monkeyTransform.modelMatrix());
 
 		//Set Monkey Material Properties
-		shader.setFloat("_Material.Ka", material.Ka);
+		/*shader.setFloat("_Material.Ka", material.Ka);
 		shader.setFloat("_Material.Kd", material.Kd);
 		shader.setFloat("_Material.Ks", material.Ks);
 		shader.setFloat("_Material.Shininess", material.Shininess);
-		shader.setFloat("_Material.Shininess", material.Shininess);
+		shader.setFloat("_Material.Shininess", material.Shininess);*/
 
 		//Draw Monkey
-		monkeyModel.draw();
+		//monkeyModel.draw();
 
 		//Plane
 		//Bind Texture
-		glBindTextureUnit(0, concreteTexture);
-		glBindTextureUnit(1, concreteNormal);
-
-		//Set Plane Transform
-		planeTransform.position = glm::vec3(0, -1, 0);
+		//glBindTextureUnit(0, concreteTexture);
+		//glBindTextureUnit(1, concreteNormal);
 
 		//Set Plane Model
-		shader.setMat4("_Model", planeTransform.modelMatrix());
+		//shader.setMat4("_Model", planeTransform.modelMatrix());
 
 		//Set Plane Material Properties
-		shader.setFloat("_Material.Ka", material.Ka);
+		/*shader.setFloat("_Material.Ka", material.Ka);
 		shader.setFloat("_Material.Kd", material.Kd);
 		shader.setFloat("_Material.Ks", material.Ks);
 		shader.setFloat("_Material.Shininess", material.Shininess);
-		shader.setFloat("_Material.Shininess", material.Shininess);
+		shader.setFloat("_Material.Shininess", material.Shininess); */
 
 		//Draw Plane Mesh to Screen
-		planeModel.draw();
+		//planeModel.draw();
 
 
 		// DON'T TOUCH BEYOND THIS POINT
@@ -404,7 +428,9 @@ void drawUI() {
 	ImGui::Begin("Shadow Map");
 	ImGui::BeginChild("Shadow Map");
 	ImVec2 windowSize = ImGui::GetWindowSize();
-	ImGui::Image((ImTextureID)&shadowMapFramebuffer, windowSize, ImVec2(0, 1), ImVec2(1, 0));
+	//ImGui::Image((ImTextureID)framebuffer.colorBuffer, windowSize, ImVec2(0, 1), ImVec2(1, 0));
+	ImGui::Image((ImTextureID)shadowMapFramebuffer.depthBuffer, windowSize, ImVec2(0, 1), ImVec2(1, 0));
+	//ImGui::Image((ImTextureID)shadowTextureID, windowSize, ImVec2(0, 1), ImVec2(1, 0));
 	ImGui::EndChild();
 
 	ImGui::End();
