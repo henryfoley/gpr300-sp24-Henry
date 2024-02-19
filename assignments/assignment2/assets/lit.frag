@@ -8,8 +8,11 @@ in Surface{
 	mat3 TBN;			//TBN Matrix
 }fs_in;
 
-uniform sampler2D _MainTex; //2D Texture Sampler
-uniform sampler2D _NormalTex; //Normal Sampler
+in vec4 LightSpacePos;
+
+uniform sampler2D _MainTex;		//2D Texture Sampler
+uniform sampler2D _NormalTex;	//Normal Sampler
+uniform sampler2D _ShadowMap;	//Shadow Map Sampler
 
 //Lighting Uniforms
 uniform vec3 _EyePos;
@@ -25,6 +28,16 @@ struct Material{
 
 };
 uniform Material _Material;
+
+float calcShadow(sampler2D shadowMap, vec4 LightSpacePos){
+	
+	vec3 projCoords = LightSpacePos.xyz / LightSpacePos.w;
+	projCoords = projCoords * 0.5 + 0.5;
+	float closestDepth = texture(shadowMap, projCoords.xy).r;
+	float currentDepth = projCoords.z;
+	float shadow = currentDepth > closestDepth ? 1.0 : 0.0;
+	return shadow;
+}
 
 void main(){
 	
@@ -43,8 +56,11 @@ void main(){
 
 	float specularFactor = pow(max(dot(normal,halfAngle),0.0),_Material.Shininess);
 
-	vec3 lightColor = _LightColor * (_Material.Kd * diffuseFactor + _Material.Ks * specularFactor);
-	lightColor += _AmbientColor * _Material.Ka;
+	float shadow = calcShadow(_ShadowMap, LightSpacePos);
+
+    vec3 lightColor = _LightColor * (_Material.Kd * diffuseFactor + _Material.Ks * specularFactor);
+    lightColor += _AmbientColor * _Material.Ka;
+    lightColor *= (1.0 - shadow); // Factor in shadow
 	vec3 objectColor = texture(_MainTex, fs_in.TexCoord).rgb;
 	FragColor = vec4(objectColor * lightColor, 1.0);
 }

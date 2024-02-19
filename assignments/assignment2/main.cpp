@@ -146,8 +146,6 @@ int main() {
 	scene.addAsset(monkeyAsset);
 	scene.addAsset(planeAsset);
 
-
-
 	//Create Framebuffer Screen Quad
 	unsigned int quadVAO, quadVBO;
 	glGenVertexArrays(1, &quadVAO);
@@ -189,13 +187,19 @@ int main() {
 		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 		shadowMapCamera.viewMatrix() = lightSpaceMatrix;
 
+		//Enable Depth Testing
+		glEnable(GL_DEPTH_TEST);
+		glDepthFunc(GL_LESS);
+
 		//Shadowmap draw
         // Set the viewport settings
-        glViewport(0, 0, screenWidth, screenHeight);
 		glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFramebuffer.fbo);
+		glViewport(0, 0, screenWidth, screenHeight);
 		glClear(GL_DEPTH_BUFFER_BIT);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		shadowMapCamera.projectionMatrix() = lightProjection;
+		shadowMapShader.use();
+		shadowMapShader.setMat4("_LightSpaceMatrix", lightSpaceMatrix);
 		scene.draw(shadowMapShader, shadowMapCamera);
 
 		//Draw
@@ -203,9 +207,10 @@ int main() {
 		
 		//Render First Pass
 		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.fbo);
+		glViewport(0, 0, screenWidth, screenHeight);
 		glClearColor(0.6f,0.8f,0.92f,1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glEnable(GL_DEPTH_TEST);
+
 		
 		shader.use();
 		
@@ -228,7 +233,7 @@ int main() {
 		
 		scene.draw(shader, camera);
 		
-		//OLD CODE
+		/*//OLD CODE
 		//Use Model Shader
 	
 
@@ -259,7 +264,7 @@ int main() {
 		shader.setFloat("_Material.Kd", material.Kd);
 		shader.setFloat("_Material.Ks", material.Ks);
 		shader.setFloat("_Material.Shininess", material.Shininess);
-		shader.setFloat("_Material.Shininess", material.Shininess);*/
+		shader.setFloat("_Material.Shininess", material.Shininess);
 
 		//Draw Monkey
 		//monkeyModel.draw();
@@ -428,9 +433,8 @@ void drawUI() {
 	ImGui::Begin("Shadow Map");
 	ImGui::BeginChild("Shadow Map");
 	ImVec2 windowSize = ImGui::GetWindowSize();
-	ImGui::Image((ImTextureID)framebuffer.depthBuffer, windowSize, ImVec2(0, 1), ImVec2(1, 0));
-	//ImGui::Image((ImTextureID)shadowMapFramebuffer.depthBuffer, windowSize, ImVec2(0, 1), ImVec2(1, 0));
-	//ImGui::Image((ImTextureID)shadowTextureID, windowSize, ImVec2(0, 1), ImVec2(1, 0));
+	//ImGui::Image((ImTextureID)framebuffer.depthBuffer, windowSize, ImVec2(0, 1), ImVec2(1, 0));
+	ImGui::Image((ImTextureID)shadowMapFramebuffer.depthBuffer, windowSize, ImVec2(0, 1), ImVec2(1, 0));
 	ImGui::EndChild();
 
 	ImGui::End();

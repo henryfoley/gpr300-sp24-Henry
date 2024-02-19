@@ -8,6 +8,9 @@ layout(location = 4) in vec3 vBitangent;
 
 uniform mat4 _Model; //Model->World Matrix
 uniform mat4 _ViewProjection; //Combined View->Projection Matrix
+uniform mat4 _LightViewProjection; //Combined Light View->Projection Matrix
+
+out vec4 LightSpacePos; //Sent to fragment shader
 
 out Surface{
 	vec2 TexCoord;
@@ -30,6 +33,8 @@ void main(){
 
 	mat3 TBN = mat3(T, B, N);
 	vs_out.TBN = TBN;
+
+	LightSpacePos = _LightViewProjection * _Model * vec4(vPos,1.0);
 
 	//Transform vertex position to homogeneous clip space
 	gl_Position = _ViewProjection * _Model * vec4(vPos,1.0);
