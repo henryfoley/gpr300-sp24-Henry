@@ -34,6 +34,7 @@ ew::CameraController cameraController;
 float lightCamDist = 6.0f;
 
 //Textures
+GLuint shadowMapTex;
 GLuint monkeyTexture;
 GLuint monkeyNormal;
 GLuint concreteTexture;
@@ -104,7 +105,7 @@ int main() {
 	ew::Transform monkeyTransform;
 
 	// Ground Plane Shader, Model, and Transform
-	ew::Model planeModel = ew::Model(ew::Mesh(ew::createPlane(10, 10, 5)));
+	ew::Model planeModel = ew::Model(ew::Mesh(ew::createPlane(10, 10, 1)));
 	ew::Transform planeTransform;
 	//Set Plane Transform
 	planeTransform.position = glm::vec3(0, -1, 0);
@@ -120,8 +121,12 @@ int main() {
 	shadowMapCamera.target = monkeyTransform.position;
 	shadowMapCamera.aspectRatio = 1.0f;
 	shadowMapCamera.fov = 60.0f;
+	shadowMapCamera.nearPlane = 0.1f;
 	shadowMapCamera.farPlane = 6.0f;
 	shadowMapCamera.position = shadowMapCamera.target - lightDirection * lightCamDist;
+	shadowMapCamera.orthographic = true;
+
+
 
 	//Textures
 	//Monkey Textures
@@ -134,9 +139,6 @@ int main() {
 	concreteNormal = ew::loadTexture("assets/concrete_normal.jpg");
 	concreteTextures.push_back(concreteTexture);
 	concreteTextures.push_back(concreteNormal);
-
-	//Light Space Transform
-	glm::mat4 lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, shadowMapCamera.nearPlane, shadowMapCamera.farPlane);
 
 	//Add Scene Assets
 	hfLib::SceneAsset monkeyAsset = hfLib::SceneAsset(monkeyModel, monkeyTransform, monkeyTextures);
@@ -181,15 +183,23 @@ int main() {
 		float time = (float)glfwGetTime();
 		deltaTime = time - prevFrameTime;
 		prevFrameTime = time;
+	
+		
+		//lightPos = scene.getAsset(0).getTransform().position - lightDirection * 5.0f;	
+		lightPos = glm::vec3(-2.0f, 4.0f, -1.0f);
+		//shadowMapCamera.position = lightPos;
+		glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
 
-		lightPos = scene.getAsset(0).getTransform().position - lightDirection * 5.0f;	
-		glm::mat4 lightView = glm::lookAt(lightPos, scene.getAsset(0).getTransform().position, glm::vec3(0.0, 1.0, 0.0));
+		//Light Space Transform
+		glm::mat4 lightProjectionOrtho = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, shadowMapCamera.nearPlane, shadowMapCamera.farPlane);
+		glm::mat4 lightProjectionPerspective = glm::perspective(glm::radians(shadowMapCamera.fov), 1.0f, shadowMapCamera.nearPlane, shadowMapCamera.farPlane);
+		glm::mat4 lightProjection = lightProjectionOrtho;
 		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
 		shadowMapCamera.viewMatrix() = lightSpaceMatrix;
 
 		//Enable Depth Testing
 		glEnable(GL_DEPTH_TEST);
-		glDepthFunc(GL_LESS);
+		//glDepthFunc(GL_LESS);
 
 		//Shadowmap draw
         // Set the viewport settings
@@ -199,8 +209,8 @@ int main() {
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		shadowMapCamera.projectionMatrix() = lightProjection;
 		shadowMapShader.use();
-		shadowMapShader.setMat4("_LightSpaceMatrix", lightSpaceMatrix);
 		scene.draw(shadowMapShader, shadowMapCamera);
+		shadowMapTex = shadowMapFramebuffer.depthBuffer;
 
 		//Draw
 		//If specific to pass, like passing specific variable, then do that outside of drawScene()
@@ -211,9 +221,12 @@ int main() {
 		glClearColor(0.6f,0.8f,0.92f,1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		
+		//Use Shader
 		shader.use();
 		
+		//Bind Shadowmap Texture
+		shader.setInt("_ShadowMap", shadowMapTex);
+
 		// Custom Shader Uniforms
 		shader.setFloat("_Material.Ka", material.Ka);
 		shader.setFloat("_Material.Kd", material.Kd);
@@ -228,6 +241,7 @@ int main() {
 		scene.getAsset(0).getTransform().rotation = glm::rotate(scene.getAsset(0).getTransform().rotation, deltaTime, glm::vec3(0.0, 1.0, 0.0));
 		monkeyTransform.rotation = glm::rotate(monkeyTransform.rotation, deltaTime, glm::vec3(0.0, 1.0, 0.0));
 
+		shader.setMat4("_LightViewProjection", lightProjection);
 		shader.setVec3("_LightDirection", lightDirection);
 		shader.setVec3("_LightColor", lightColor);
 		
@@ -284,10 +298,6 @@ int main() {
 		shader.setFloat("_Material.Shininess", material.Shininess);
 		shader.setFloat("_Material.Shininess", material.Shininess); */
 
-		//Draw Plane Mesh to Screen
-		//planeModel.draw();
-
-
 		// DON'T TOUCH BEYOND THIS POINT
 		//Second Pass
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -337,6 +347,8 @@ void drawUI() {
 		}
 		ImGui::Checkbox("Orthographic", &camera.orthographic);
 		ImGui::SliderFloat("CameraFOV", &camera.fov, 60.0f, 120.0f);
+		ImGui::SliderFloat("Near Plane", &camera.nearPlane, 0.1f, 10.0f);
+		ImGui::SliderFloat("Far Plane", &camera.farPlane, 0.1f, 10.0f);
 	}
 	if (ImGui::CollapsingHeader("Material")) {
 		ImGui::SliderFloat("AmbientK", &material.Ka, 0.0f, 1.0f);
@@ -355,8 +367,10 @@ void drawUI() {
 	}
 	if (ImGui::CollapsingHeader("Shadowmap")) {
 		//Camera near/ far plane, ortho view
-
-
+		ImGui::Checkbox("Orthographic", &shadowMapCamera.orthographic);
+		ImGui::SliderFloat("CameraFOV", &shadowMapCamera.fov, 60.0f, 120.0f);
+		ImGui::SliderFloat("Near Plane", &shadowMapCamera.nearPlane, 0.1f, 10.0f);
+		ImGui::SliderFloat("Far Plane", &shadowMapCamera.farPlane, 0.1f, 10.0f);
 	}
 	if (ImGui::CollapsingHeader("Post Process")) {
 		ImGui::Checkbox("Inverse Colors", &postProcess.inverse);

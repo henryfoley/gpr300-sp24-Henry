@@ -31,12 +31,11 @@ uniform Material _Material;
 
 float calcShadow(sampler2D shadowMap, vec4 LightSpacePos){
 	
-	vec3 projCoords = LightSpacePos.xyz / LightSpacePos.w;
-	projCoords = projCoords * 0.5 + 0.5;
-	float closestDepth = texture(shadowMap, projCoords.xy).r;
-	float currentDepth = projCoords.z;
-	float shadow = currentDepth > closestDepth ? 1.0 : 0.0;
-	return shadow;
+	vec3 sampleCoord = LightSpacePos.xyz / LightSpacePos.w;
+	sampleCoord = sampleCoord * 0.5 + 0.5;
+	float myDepth = sampleCoord.z;
+	float shadowMapDepth = texture(shadowMap, sampleCoord.xy).r;
+	return step(shadowMapDepth, myDepth);
 }
 
 void main(){
