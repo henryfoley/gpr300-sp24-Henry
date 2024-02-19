@@ -167,12 +167,12 @@ int main() {
 	framebuffer = hfLib::createFramebuffer(screenWidth, screenHeight, GL_RGB16F);
 
 	//Shadowmap Configuration
-	shadowMapFramebuffer = hfLib::createFramebuffer(screenWidth, screenHeight);
+	shadowMapFramebuffer = hfLib::createFramebuffer(1024, 1024);
 
 	//Global OpenGL Variables
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK); //Back face culling
-	glEnable(GL_DEPTH_TEST); //Depth testing
+	//glEnable(GL_DEPTH_TEST); //Depth testing
 	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);	//Draw as Wireframe
 	
 	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
@@ -193,9 +193,11 @@ int main() {
 		//Light Space Transform
 		glm::mat4 lightProjectionOrtho = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, shadowMapCamera.nearPlane, shadowMapCamera.farPlane);
 		glm::mat4 lightProjectionPerspective = glm::perspective(glm::radians(shadowMapCamera.fov), 1.0f, shadowMapCamera.nearPlane, shadowMapCamera.farPlane);
+		
 		glm::mat4 lightProjection = lightProjectionOrtho;
-		glm::mat4 lightSpaceMatrix = lightProjection * lightView;
-		shadowMapCamera.viewMatrix() = lightSpaceMatrix;
+		//glm::mat4 lightSpaceMatrix = lightProjection * lightView;
+		glm::mat4 lightSpaceMatrix = shadowMapCamera.projectionMatrix();
+		//shadowMapCamera.viewMatrix() = lightSpaceMatrix;
 
 		//Enable Depth Testing
 		glEnable(GL_DEPTH_TEST);
@@ -204,12 +206,12 @@ int main() {
 		//Shadowmap draw
         // Set the viewport settings
 		glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFramebuffer.fbo);
-		glViewport(0, 0, screenWidth, screenHeight);
+		glViewport(0, 0, 1024, 1024);
 		glClear(GL_DEPTH_BUFFER_BIT);
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		shadowMapCamera.projectionMatrix() = lightProjection;
+		//shadowMapCamera.projectionMatrix() = lightProjection;
 		shadowMapShader.use();
-		scene.draw(shadowMapShader, shadowMapCamera);
+		scene.draw(shadowMapShader, camera);
 		shadowMapTex = shadowMapFramebuffer.depthBuffer;
 
 		//Draw
@@ -241,7 +243,7 @@ int main() {
 		scene.getAsset(0).getTransform().rotation = glm::rotate(scene.getAsset(0).getTransform().rotation, deltaTime, glm::vec3(0.0, 1.0, 0.0));
 		monkeyTransform.rotation = glm::rotate(monkeyTransform.rotation, deltaTime, glm::vec3(0.0, 1.0, 0.0));
 
-		shader.setMat4("_LightViewProjection", lightProjection);
+		shader.setMat4("_LightViewProjection", shadowMapCamera.viewMatrix());
 		shader.setVec3("_LightDirection", lightDirection);
 		shader.setVec3("_LightColor", lightColor);
 		
@@ -348,7 +350,7 @@ void drawUI() {
 		ImGui::Checkbox("Orthographic", &camera.orthographic);
 		ImGui::SliderFloat("CameraFOV", &camera.fov, 60.0f, 120.0f);
 		ImGui::SliderFloat("Near Plane", &camera.nearPlane, 0.1f, 10.0f);
-		ImGui::SliderFloat("Far Plane", &camera.farPlane, 0.1f, 10.0f);
+		ImGui::SliderFloat("Far Plane", &camera.farPlane, 0.1f, 1000.0f);
 	}
 	if (ImGui::CollapsingHeader("Material")) {
 		ImGui::SliderFloat("AmbientK", &material.Ka, 0.0f, 1.0f);
