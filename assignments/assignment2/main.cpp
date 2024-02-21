@@ -184,25 +184,21 @@ int main() {
 		shadowMapCamera.position = scene.getAsset(0).getTransform().position - lightDirection * lightCamDist;
 		glm::mat4 lightSpaceMatrix = shadowMapCamera.projectionMatrix() * shadowMapCamera.viewMatrix();
 
-
 		//Enable Depth Testing
 		glEnable(GL_DEPTH_TEST);
-		//glDepthFunc(GL_LESS);
 
 		//Shadowmap draw
         // Set the viewport settings
 		glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFramebuffer.fbo);
 		glViewport(0, 0, 1024, 1024);
 		glClear(GL_DEPTH_BUFFER_BIT);
-		//shadowMapCamera.projectionMatrix() = lightProjection;
+		//lCullFace(GL_FRONT);
 		shadowMapShader.use();
 		scene.draw(shadowMapShader, shadowMapCamera);
 		shadowMapTex = shadowMapFramebuffer.depthBuffer;
-
-		//Draw
-		//If specific to pass, like passing specific variable, then do that outside of drawScene()
 		
 		//Render First Pass
+		//glCullFace(GL_BACK);
 		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.fbo);
 		glViewport(0, 0, screenWidth, screenHeight);
 		glClearColor(0.6f,0.8f,0.92f,1.0f);
@@ -236,57 +232,10 @@ int main() {
 		shader.setVec3("_LightColor", lightColor);
 		
 		scene.draw(shader, camera);
-		
-		/*//OLD CODE
-		//Use Model Shader
-	
-
-		//Camera Controller
-		
-		//shader.setMat4("_ViewProjection", camera.projectionMatrix() * camera.viewMatrix());
-		
-		//shader.setMat4("_Model", glm::mat4(1.0f));
-
-		//Pass Light Uniforms
-
-
-		//Monkey
-		//Bind Texture
-		//glBindTextureUnit(0, monkeyTexture);
-		//shader.setInt("_MainTex", 0);
-		//glBindTextureUnit(1, monkeyNormal);
-		//shader.setInt("_NormalTex", 1);
-
-		//Rotate model around Y axis
-		
 
 		//transform.modelMatrix() combines translation, rotation, and scale into a 4x4 model matrix
 		//shader.setMat4("_Model", monkeyTransform.modelMatrix());
 
-		//Set Monkey Material Properties
-		/*shader.setFloat("_Material.Ka", material.Ka);
-		shader.setFloat("_Material.Kd", material.Kd);
-		shader.setFloat("_Material.Ks", material.Ks);
-		shader.setFloat("_Material.Shininess", material.Shininess);
-		shader.setFloat("_Material.Shininess", material.Shininess);
-
-		//Draw Monkey
-		//monkeyModel.draw();
-
-		//Plane
-		//Bind Texture
-		//glBindTextureUnit(0, concreteTexture);
-		//glBindTextureUnit(1, concreteNormal);
-
-		//Set Plane Model
-		//shader.setMat4("_Model", planeTransform.modelMatrix());
-
-		//Set Plane Material Properties
-		/*shader.setFloat("_Material.Ka", material.Ka);
-		shader.setFloat("_Material.Kd", material.Kd);
-		shader.setFloat("_Material.Ks", material.Ks);
-		shader.setFloat("_Material.Shininess", material.Shininess);
-		shader.setFloat("_Material.Shininess", material.Shininess); */
 
 		// DON'T TOUCH BEYOND THIS POINT
 		//Second Pass
@@ -303,9 +252,9 @@ int main() {
 		screenShader.setVec3("_KernelTop",		postProcess.kernelTop);
 		screenShader.setVec3("_KernelCenter",	postProcess.kernelCenter);
 		screenShader.setVec3("_KernelBottom",	postProcess.kernelBottom);
-		screenShader.setInt("_ColorBuffer",		0);	// Not working properly
+		screenShader.setInt("_ColorBuffer",		0);
 		glBindTextureUnit(1, (GLuint)framebuffer.depthBuffer);
-		screenShader.setInt("_DepthBuffer",		framebuffer.depthBuffer);	// Not working properly
+		screenShader.setInt("_DepthBuffer",		1);
 
 		glBindVertexArray(quadVAO);
 		glDisable(GL_DEPTH_TEST);

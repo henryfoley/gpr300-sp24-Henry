@@ -35,6 +35,7 @@ uniform Material _Material;
 
 float calcShadow(vec3 normal,vec3 toLight, sampler2D shadowMap, vec4 LightSpacePos){
 	
+	float shadow = 0.0f;
 	vec3 sampleCoord = LightSpacePos.xyz / LightSpacePos.w;
 	sampleCoord = sampleCoord * 0.5 + 0.5;
 
@@ -46,7 +47,22 @@ float calcShadow(vec3 normal,vec3 toLight, sampler2D shadowMap, vec4 LightSpaceP
 		return 0;
 	}
 	float shadowMapDepth = texture(shadowMap, sampleCoord.xy).r;
-	return step(shadowMapDepth, myDepth);
+	shadow = step(shadowMapDepth, myDepth);
+
+	//Percentage Closer Filtering
+	vec2 texelOffset = 1.0 / textureSize(_ShadowMap, 0);
+	for(int y = -1; y <= 1; y++){
+		for(int x = -1; x <= 1; x++){
+			float pcfDepth = texture(shadowMap, sampleCoord.xy + vec2(x * texelOffset.x, y * texelOffset.y)).r;
+			shadow += step(pcfDepth, myDepth);
+
+			//vec2 uv  = LightSpacePos.xy + vec2(x * texelOffset.x, y * texelOffset.y);
+			//shadow += step(texture(_ShadowMap, uv).r, myDepth);
+		}
+	}
+	shadow /= 9.0;
+
+	return shadow;
 }
 
 void main(){
@@ -66,6 +82,7 @@ void main(){
 
 	float specularFactor = pow(max(dot(normal,halfAngle),0.0),_Material.Shininess);
 
+	//Shadow Calculation
 	float shadow = calcShadow(normal,toLight,_ShadowMap, LightSpacePos);
 
     vec3 lightColor = _LightColor * (_Material.Kd * diffuseFactor + _Material.Ks * specularFactor);
