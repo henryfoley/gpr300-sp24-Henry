@@ -43,7 +43,7 @@ std::vector<GLuint> monkeyTextures;
 std::vector<GLuint> concreteTextures;
 
 //Light uniforms
-glm::vec3 lightDirection = glm::vec3(0.0, -0.95f, 0.0);
+glm::vec3 lightDirection = glm::vec3(0.0, -1.0f, 0.0);
 glm::vec3 lightColor = glm::vec3(1.0);
 
 //Shadowmap Framebuffer
@@ -348,7 +348,7 @@ void drawUI() {
 		ImGui::ColorEdit3("LighColor", &lightColor.x);
 
 		if(ImGui::SliderFloat3("Light Direction", &lightDirection.x, -1, 1));
-			if (glm::length(lightDirection.x) != 0)
+			if (glm::length(lightDirection) != 0)
 			{
 				lightDirection = glm::normalize(lightDirection);
 			}
