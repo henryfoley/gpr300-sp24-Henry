@@ -34,6 +34,9 @@ float calcShadow(sampler2D shadowMap, vec4 LightSpacePos){
 	vec3 sampleCoord = LightSpacePos.xyz / LightSpacePos.w;
 	sampleCoord = sampleCoord * 0.5 + 0.5;
 	float myDepth = sampleCoord.z;
+	if(myDepth >= 1.0f){
+		return 0;
+	}
 	float shadowMapDepth = texture(shadowMap, sampleCoord.xy).r;
 	return step(shadowMapDepth, myDepth);
 }
@@ -58,8 +61,9 @@ void main(){
 	float shadow = calcShadow(_ShadowMap, LightSpacePos);
 
     vec3 lightColor = _LightColor * (_Material.Kd * diffuseFactor + _Material.Ks * specularFactor);
-    lightColor += _AmbientColor * _Material.Ka;
+   
     lightColor *= (1.0 - shadow); // Factor in shadow
+	lightColor += _AmbientColor * _Material.Ka;
 	vec3 objectColor = texture(_MainTex, fs_in.TexCoord).rgb;
 	FragColor = vec4(objectColor * lightColor, 1.0);
 }

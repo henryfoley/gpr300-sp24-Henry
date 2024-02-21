@@ -43,9 +43,8 @@ std::vector<GLuint> monkeyTextures;
 std::vector<GLuint> concreteTextures;
 
 //Light uniforms
-glm::vec3 lightDirection = glm::vec3(0.0, -1.0, 0.0);
+glm::vec3 lightDirection = glm::vec3(0.0, -0.95f, 0.0);
 glm::vec3 lightColor = glm::vec3(1.0);
-glm::vec3 lightPos = glm::vec3(1.0);
 
 //Shadowmap Framebuffer
 hfLib::Framebuffer shadowMapFramebuffer;
@@ -117,16 +116,13 @@ int main() {
 	camera.fov = 60.0f;
 
 	//Shadow Map Cameras
-	shadowMapCamera.position = lightPos;
 	shadowMapCamera.target = monkeyTransform.position;
 	shadowMapCamera.aspectRatio = 1.0f;
 	shadowMapCamera.fov = 60.0f;
 	shadowMapCamera.nearPlane = 0.1f;
-	shadowMapCamera.farPlane = 6.0f;
+	shadowMapCamera.farPlane = 12.0f;
 	shadowMapCamera.position = shadowMapCamera.target - lightDirection * lightCamDist;
 	shadowMapCamera.orthographic = true;
-
-
 
 	//Textures
 	//Monkey Textures
@@ -185,19 +181,9 @@ int main() {
 		prevFrameTime = time;
 	
 		
-		//lightPos = scene.getAsset(0).getTransform().position - lightDirection * 5.0f;	
-		lightPos = glm::vec3(-2.0f, 4.0f, -1.0f);
-		//shadowMapCamera.position = lightPos;
-		glm::mat4 lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
+		shadowMapCamera.position = scene.getAsset(0).getTransform().position - lightDirection * 10.0f;	
+		glm::mat4 lightSpaceMatrix = shadowMapCamera.projectionMatrix() * shadowMapCamera.viewMatrix();
 
-		//Light Space Transform
-		glm::mat4 lightProjectionOrtho = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, shadowMapCamera.nearPlane, shadowMapCamera.farPlane);
-		glm::mat4 lightProjectionPerspective = glm::perspective(glm::radians(shadowMapCamera.fov), 1.0f, shadowMapCamera.nearPlane, shadowMapCamera.farPlane);
-		
-		glm::mat4 lightProjection = lightProjectionOrtho;
-		//glm::mat4 lightSpaceMatrix = lightProjection * lightView;
-		glm::mat4 lightSpaceMatrix = shadowMapCamera.projectionMatrix();
-		//shadowMapCamera.viewMatrix() = lightSpaceMatrix;
 
 		//Enable Depth Testing
 		glEnable(GL_DEPTH_TEST);
@@ -208,10 +194,9 @@ int main() {
 		glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFramebuffer.fbo);
 		glViewport(0, 0, 1024, 1024);
 		glClear(GL_DEPTH_BUFFER_BIT);
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		//shadowMapCamera.projectionMatrix() = lightProjection;
 		shadowMapShader.use();
-		scene.draw(shadowMapShader, camera);
+		scene.draw(shadowMapShader, shadowMapCamera);
 		shadowMapTex = shadowMapFramebuffer.depthBuffer;
 
 		//Draw
@@ -227,7 +212,8 @@ int main() {
 		shader.use();
 		
 		//Bind Shadowmap Texture
-		shader.setInt("_ShadowMap", shadowMapTex);
+		glBindTextureUnit(2, shadowMapTex);
+		shader.setInt("_ShadowMap", 2);
 
 		// Custom Shader Uniforms
 		shader.setFloat("_Material.Ka", material.Ka);
@@ -243,7 +229,7 @@ int main() {
 		scene.getAsset(0).getTransform().rotation = glm::rotate(scene.getAsset(0).getTransform().rotation, deltaTime, glm::vec3(0.0, 1.0, 0.0));
 		monkeyTransform.rotation = glm::rotate(monkeyTransform.rotation, deltaTime, glm::vec3(0.0, 1.0, 0.0));
 
-		shader.setMat4("_LightViewProjection", shadowMapCamera.viewMatrix());
+		shader.setMat4("_LightViewProjection", lightSpaceMatrix);
 		shader.setVec3("_LightDirection", lightDirection);
 		shader.setVec3("_LightColor", lightColor);
 		
@@ -372,7 +358,7 @@ void drawUI() {
 		ImGui::Checkbox("Orthographic", &shadowMapCamera.orthographic);
 		ImGui::SliderFloat("CameraFOV", &shadowMapCamera.fov, 60.0f, 120.0f);
 		ImGui::SliderFloat("Near Plane", &shadowMapCamera.nearPlane, 0.1f, 10.0f);
-		ImGui::SliderFloat("Far Plane", &shadowMapCamera.farPlane, 0.1f, 10.0f);
+		ImGui::SliderFloat("Far Plane", &shadowMapCamera.farPlane, 0.1f, 20.0f);
 	}
 	if (ImGui::CollapsingHeader("Post Process")) {
 		ImGui::Checkbox("Inverse Colors", &postProcess.inverse);
