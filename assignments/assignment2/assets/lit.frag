@@ -14,6 +14,10 @@ uniform sampler2D _MainTex;		//2D Texture Sampler
 uniform sampler2D _NormalTex;	//Normal Sampler
 uniform sampler2D _ShadowMap;	//Shadow Map Sampler
 
+//Slope Bias
+uniform float _MinSlopeBias;
+uniform float _MaxSlopeBias;
+
 //Lighting Uniforms
 uniform vec3 _EyePos;
 uniform vec3 _LightDirection = vec3(0.0,-1.0,0.0);
@@ -29,11 +33,15 @@ struct Material{
 };
 uniform Material _Material;
 
-float calcShadow(sampler2D shadowMap, vec4 LightSpacePos){
+float calcShadow(vec3 normal,vec3 toLight, sampler2D shadowMap, vec4 LightSpacePos){
 	
 	vec3 sampleCoord = LightSpacePos.xyz / LightSpacePos.w;
 	sampleCoord = sampleCoord * 0.5 + 0.5;
-	float myDepth = sampleCoord.z;
+
+	//Bias
+	float bias = max(_MaxSlopeBias * (1.0 - dot(normal,toLight)),_MinSlopeBias);
+	
+	float myDepth = sampleCoord.z - bias;
 	if(myDepth >= 1.0f){
 		return 0;
 	}
@@ -58,7 +66,7 @@ void main(){
 
 	float specularFactor = pow(max(dot(normal,halfAngle),0.0),_Material.Shininess);
 
-	float shadow = calcShadow(_ShadowMap, LightSpacePos);
+	float shadow = calcShadow(normal,toLight,_ShadowMap, LightSpacePos);
 
     vec3 lightColor = _LightColor * (_Material.Kd * diffuseFactor + _Material.Ks * specularFactor);
    

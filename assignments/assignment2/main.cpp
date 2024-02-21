@@ -31,7 +31,7 @@ float deltaTime;
 ew::Camera camera;
 ew::Camera shadowMapCamera;
 ew::CameraController cameraController;
-float lightCamDist = 6.0f;
+float lightCamDist = 4.0f;
 
 //Textures
 GLuint shadowMapTex;
@@ -49,6 +49,8 @@ glm::vec3 lightColor = glm::vec3(1.0);
 //Shadowmap Framebuffer
 hfLib::Framebuffer shadowMapFramebuffer;
 hfLib::Framebuffer framebuffer;
+float minSlopeBias = 0.005f;
+float maxSlopeBias = 0.01f;
 
 //Create Scene
 hfLib::Scene scene;
@@ -116,12 +118,10 @@ int main() {
 	camera.fov = 60.0f;
 
 	//Shadow Map Cameras
-	shadowMapCamera.target = monkeyTransform.position;
 	shadowMapCamera.aspectRatio = 1.0f;
 	shadowMapCamera.fov = 60.0f;
 	shadowMapCamera.nearPlane = 0.1f;
 	shadowMapCamera.farPlane = 12.0f;
-	shadowMapCamera.position = shadowMapCamera.target - lightDirection * lightCamDist;
 	shadowMapCamera.orthographic = true;
 
 	//Textures
@@ -181,7 +181,7 @@ int main() {
 		prevFrameTime = time;
 	
 		
-		shadowMapCamera.position = scene.getAsset(0).getTransform().position - lightDirection * 10.0f;	
+		shadowMapCamera.position = scene.getAsset(0).getTransform().position - lightDirection * lightCamDist;
 		glm::mat4 lightSpaceMatrix = shadowMapCamera.projectionMatrix() * shadowMapCamera.viewMatrix();
 
 
@@ -214,6 +214,8 @@ int main() {
 		//Bind Shadowmap Texture
 		glBindTextureUnit(2, shadowMapTex);
 		shader.setInt("_ShadowMap", 2);
+		shader.setFloat("_MinSlopeBias", minSlopeBias);
+		shader.setFloat("_MaxSlopeBias", maxSlopeBias);
 
 		// Custom Shader Uniforms
 		shader.setFloat("_Material.Ka", material.Ka);
@@ -354,11 +356,12 @@ void drawUI() {
 			}
 	}
 	if (ImGui::CollapsingHeader("Shadowmap")) {
-		//Camera near/ far plane, ortho view
 		ImGui::Checkbox("Orthographic", &shadowMapCamera.orthographic);
-		ImGui::SliderFloat("CameraFOV", &shadowMapCamera.fov, 60.0f, 120.0f);
 		ImGui::SliderFloat("Near Plane", &shadowMapCamera.nearPlane, 0.1f, 10.0f);
 		ImGui::SliderFloat("Far Plane", &shadowMapCamera.farPlane, 0.1f, 20.0f);
+		ImGui::SliderFloat("Camera Distance", &lightCamDist, 3.0f, 20.0f);
+		ImGui::SliderFloat("Min Slope Bias", &minSlopeBias, 0.001f, 0.01f);
+		ImGui::SliderFloat("Max Slope Bias", &maxSlopeBias, 0.005f, 0.02f);
 	}
 	if (ImGui::CollapsingHeader("Post Process")) {
 		ImGui::Checkbox("Inverse Colors", &postProcess.inverse);
