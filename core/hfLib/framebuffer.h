@@ -13,11 +13,12 @@ namespace hfLib {
 	{
 		unsigned int fbo;
 		unsigned int colorBuffer;
-		//unsigned int colorBuffers[8];
+		unsigned int colorBuffers[3];
 		unsigned int depthBuffer;
 		unsigned int width;
 		unsigned int height;
 	};
 	Framebuffer createFramebuffer(unsigned int width, unsigned int height, int colorFormat);
 	Framebuffer createFramebuffer(unsigned int width, unsigned int height);
+	Framebuffer createGBuffer(unsigned int width, unsigned int height);
 }

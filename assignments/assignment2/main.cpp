@@ -91,6 +91,14 @@ float quadVertices[] =
 int main() {
 	GLFWwindow* window = initWindow("Assignment 0", screenWidth, screenHeight);
 
+	//Global OpenGL Variables
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK); //Back face culling
+	//glfwWindowHint(GLFW_SAMPLES, 4); //MSAA
+	//glEnable(GL_MULTISAMPLE);
+	//glEnable(GL_DEPTH_TEST); //Depth testing
+	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);	//Draw as Wireframe
+
 	//Lit Scene Shader
 	ew::Shader shader = ew::Shader("assets/lit.vert", "assets/lit.frag");
 	// Post Process Shader
@@ -164,12 +172,6 @@ int main() {
 
 	//Shadowmap Configuration
 	shadowMapFramebuffer = hfLib::createFramebuffer(1024, 1024);
-
-	//Global OpenGL Variables
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK); //Back face culling
-	//glEnable(GL_DEPTH_TEST); //Depth testing
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);	//Draw as Wireframe
 	
 	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 
@@ -235,7 +237,6 @@ int main() {
 
 		//transform.modelMatrix() combines translation, rotation, and scale into a 4x4 model matrix
 		//shader.setMat4("_Model", monkeyTransform.modelMatrix());
-
 
 		// DON'T TOUCH BEYOND THIS POINT
 		//Second Pass
