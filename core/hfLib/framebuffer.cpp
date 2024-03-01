@@ -97,7 +97,7 @@ namespace hfLib {
 		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.fbo);
 
 		int formats[3] = { 
-			GL_RGBA32F,		//0 = World Position
+			GL_RGB32F,		//0 = World Position
 			GL_RGB16F,		//1 = World Normal
 			GL_RGB16F		//2 = Albedo
 		};

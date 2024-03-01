@@ -188,6 +188,8 @@ int main() {
 		deltaTime = time - prevFrameTime;
 		prevFrameTime = time;
 	
+		//Update Camera
+		cameraController.move(window, &camera, deltaTime);
 		
 		shadowMapCamera.position = scene.getAsset(0).getTransform().position - lightDirection * lightCamDist;
 		glm::mat4 lightSpaceMatrix = shadowMapCamera.projectionMatrix() * shadowMapCamera.viewMatrix();
@@ -206,11 +208,13 @@ int main() {
 		shadowMapTex = shadowMapFramebuffer.depthBuffer;
 		
 		//Geometry Pass
+		
 		glBindFramebuffer(GL_FRAMEBUFFER, gBuffer.fbo);
 		glViewport(0, 0, gBuffer.width, gBuffer.height);
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+		
+		geometryShader.use();
 		scene.draw(geometryShader, camera);
 
 
@@ -241,7 +245,7 @@ int main() {
 		shader.setFloat("_Material.Shininess", material.Shininess);
 		shader.setFloat("_Material.Shininess", material.Shininess);
 		
-		cameraController.move(window, &camera, deltaTime);
+		
 		shader.setVec3("_EyePos", camera.position);
 
 		//Not Working ATM

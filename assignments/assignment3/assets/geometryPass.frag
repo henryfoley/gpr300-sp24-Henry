@@ -10,8 +10,8 @@ in Surface{
 	mat3 TBN;
 }fs_in;
 
-uniform sampler _MainTex;
-uniform sampler _NormalTex;
+uniform sampler2D _MainTex;
+uniform sampler2D _NormalTex;
 
 void main(){
 	gPosition = fs_in.WorldPos;
