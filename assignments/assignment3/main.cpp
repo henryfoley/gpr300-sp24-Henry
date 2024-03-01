@@ -104,6 +104,8 @@ int main() {
 	ew::Shader shader = ew::Shader("assets/lit.vert", "assets/lit.frag");
 	//Geometry Shader
 	ew::Shader geometryShader = ew::Shader("assets/geometryPass.vert", "assets/geometryPass.frag");
+	//Deferred Shader
+	ew::Shader deferredShader = ew::Shader("assets/deferredLit.vert", "assets/deferredLit.frag");
 	//Post Process Shader
 	ew::Shader screenShader = ew::Shader("assets/postProcess.vert", "assets/postProcess.frag");
 	//Shadow Map Shader
@@ -208,7 +210,6 @@ int main() {
 		shadowMapTex = shadowMapFramebuffer.depthBuffer;
 		
 		//Geometry Pass
-		
 		glBindFramebuffer(GL_FRAMEBUFFER, gBuffer.fbo);
 		glViewport(0, 0, gBuffer.width, gBuffer.height);
 		glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -217,8 +218,22 @@ int main() {
 		geometryShader.use();
 		scene.draw(geometryShader, camera);
 
-
 		//Lighting Pass
+		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.fbo);
+		glViewport(0, 0, framebuffer.width, framebuffer.height);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		deferredShader.use();
+
+		//Fix Light Space Pos Passing
+		glBindTextureUnit(3, shadowMapTex);
+		deferredShader.setInt("_ShadowMap", 3);
+		deferredShader.setMat4("_LightViewProjection", lightSpaceMatrix);
+		deferredShader.setVec3("_LightDirection", lightDirection);
+		deferredShader.setVec3("_LightColor", lightColor);
+		
+		glBindVertexArray(quadVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
 
 		//Post Processing Pass
 
