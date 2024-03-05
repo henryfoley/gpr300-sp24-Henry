@@ -111,18 +111,40 @@ int main() {
 	//Shadow Map Shader
 	ew::Shader shadowMapShader = ew::Shader("assets/depthOnly.vert", "assets/depthOnly.frag");
 
-	//Set Shader
-	shader.use();
+	//Textures
+	//Monkey Textures
+	monkeyTexture = ew::loadTexture("assets/monkey_color.jpg");
+	monkeyNormal = ew::loadTexture("assets/monkey_normal.jpg");
+	monkeyTextures.push_back(monkeyTexture);
+	monkeyTextures.push_back(monkeyNormal);
+	//Concrete Textures
+	concreteTexture = ew::loadTexture("assets/concrete_color.jpg");
+	concreteNormal = ew::loadTexture("assets/concrete_normal.jpg");
+	concreteTextures.push_back(concreteTexture);
+	concreteTextures.push_back(concreteNormal);
 
 	//Monkey Shader, Model, and Transform
 	ew::Model monkeyModel = ew::Model("assets/Suzanne.fbx");
-	ew::Transform monkeyTransform;
+	ew::Transform monkeyTransforms[12]; //Array of Transforms
+
+	//Set Monkey Transform
+	for (int i = 0; i < 12; i++)
+	{
+		monkeyTransforms[i].position = glm::vec3(0, 0, 0);
+		monkeyTransforms[i].position.x = sin(i * 30.0f * 3.14159f / 180.0f) * 3.0f;
+		monkeyTransforms[i].position.z = cos(i * 30.0f * 3.14159f / 180.0f) * 3.0f;
+		monkeyTransforms[i].position.y = 0.0f;
+		monkeyTransforms[i].rotation = glm::vec3(0, i * 30.0f, 0);
+		monkeyTransforms[i].scale = glm::vec3(0.5f);
+		scene.addAsset(hfLib::SceneAsset(monkeyModel, monkeyTransforms[i], monkeyTextures));
+	}
 
 	//Ground Plane Shader, Model, and Transform
 	ew::Model planeModel = ew::Model(ew::Mesh(ew::createPlane(10, 10, 1)));
 	ew::Transform planeTransform;
-	//Set Plane Transform
 	planeTransform.position = glm::vec3(0, -1, 0);
+	hfLib::SceneAsset planeAsset = hfLib::SceneAsset(planeModel, planeTransform, concreteTextures);
+	scene.addAsset(planeAsset);
 
 	//Set Camera variables
 	camera.position = glm::vec3(0.0f, 0.0f, 5.0f);
@@ -136,26 +158,9 @@ int main() {
 	shadowMapCamera.nearPlane = 0.1f;
 	shadowMapCamera.farPlane = 12.0f;
 	shadowMapCamera.orthographic = true;
+	shadowMapCamera.orthoHeight = 8.0f;
 
-	//Textures
-	//Monkey Textures
-	monkeyTexture = ew::loadTexture("assets/monkey_color.jpg");
-	monkeyNormal = ew::loadTexture("assets/monkey_normal.jpg");
-	monkeyTextures.push_back(monkeyTexture);
-	monkeyTextures.push_back(monkeyNormal);
-	//Concrete Textures
-	concreteTexture = ew::loadTexture("assets/concrete_color.jpg");
-	concreteNormal = ew::loadTexture("assets/concrete_normal.jpg");
-	concreteTextures.push_back(concreteTexture);
-	concreteTextures.push_back(concreteNormal);
 
-	//Add Scene Assets
-	hfLib::SceneAsset monkeyAsset = hfLib::SceneAsset(monkeyModel, monkeyTransform, monkeyTextures);
-	hfLib::SceneAsset planeAsset = hfLib::SceneAsset(planeModel, planeTransform, concreteTextures);
-
-	//Add Assets to Scene
-	scene.addAsset(monkeyAsset);
-	scene.addAsset(planeAsset);
 
 	//Create Framebuffer Screen Quad
 	unsigned int quadVAO, quadVBO;
@@ -224,9 +229,25 @@ int main() {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		deferredShader.use();
 
-		//Fix Light Space Pos Passing
+		deferredShader.setMat4("_LightViewProjection", lightSpaceMatrix);
+		deferredShader.setVec3("_LightDirection", lightDirection);
+		deferredShader.setVec3("_LightColor", lightColor);
+
+		glBindTextureUnit(0, gBuffer.colorBuffers[0]);
+		glBindTextureUnit(1, gBuffer.colorBuffers[1]);
+		glBindTextureUnit(2, gBuffer.colorBuffers[2]);
 		glBindTextureUnit(3, shadowMapTex);
 		deferredShader.setInt("_ShadowMap", 3);
+
+		// Custom Shader Uniforms
+		deferredShader.setFloat("_MinSlopeBias", minSlopeBias);
+		deferredShader.setFloat("_MaxSlopeBias", maxSlopeBias);
+		deferredShader.setFloat("_Material.Ka", material.Ka);
+		deferredShader.setFloat("_Material.Kd", material.Kd);
+		deferredShader.setFloat("_Material.Ks", material.Ks);
+		deferredShader.setFloat("_Material.Shininess", material.Shininess);
+		deferredShader.setFloat("_Material.Shininess", material.Shininess);
+		deferredShader.setVec3("_EyePos", camera.position);
 		deferredShader.setMat4("_LightViewProjection", lightSpaceMatrix);
 		deferredShader.setVec3("_LightDirection", lightDirection);
 		deferredShader.setVec3("_LightColor", lightColor);
@@ -235,11 +256,14 @@ int main() {
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 
+
 		//Post Processing Pass
+
+
 
 		//Render First Pass
 		//glCullFace(GL_BACK);
-		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.fbo);
+		/*glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.fbo);
 		glViewport(0, 0, screenWidth, screenHeight);
 		glClearColor(0.6f,0.8f,0.92f,1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -274,7 +298,7 @@ int main() {
 		shader.setVec3("_LightDirection", lightDirection);
 		shader.setVec3("_LightColor", lightColor);
 		
-		scene.draw(shader, camera);
+		scene.draw(shader, camera);*/
 
 		//transform.modelMatrix() combines translation, rotation, and scale into a 4x4 model matrix
 		//shader.setMat4("_Model", monkeyTransform.modelMatrix());
@@ -348,6 +372,7 @@ void drawUI() {
 	}
 	if (ImGui::CollapsingHeader("Shadowmap")) {
 		ImGui::Checkbox("Orthographic", &shadowMapCamera.orthographic);
+		ImGui::SliderFloat("Ortho Height", &shadowMapCamera.orthoHeight, 1.0f, 10.0f);
 		ImGui::SliderFloat("Near Plane", &shadowMapCamera.nearPlane, 0.1f, 10.0f);
 		ImGui::SliderFloat("Far Plane", &shadowMapCamera.farPlane, 0.1f, 20.0f);
 		ImGui::SliderFloat("Camera Distance", &lightCamDist, 3.0f, 20.0f);
@@ -425,13 +450,14 @@ void drawUI() {
 
 	ImGui::End();
 
-	//Shadow Mapping Debug View
+	//Texture Mapping Debug View
 	ImGui::Begin("GBuffers"); {
 		ImVec2 texSize = ImVec2(gBuffer.width/4, gBuffer.height/4);
 		for (size_t i = 0; i < 3; i++)
 		{
 			ImGui::Image((ImTextureID)gBuffer.colorBuffers[i], texSize, ImVec2(0, 1), ImVec2(1, 0));
 		}
+		ImGui::Image((ImTextureID)shadowMapTex, texSize, ImVec2(0, 1), ImVec2(1, 0));
 	}
 	ImGui::End();
 

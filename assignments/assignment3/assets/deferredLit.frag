@@ -7,8 +7,6 @@ uniform layout(binding = 0) sampler2D _gPosition;
 uniform layout(binding = 1) sampler2D _gNormal;
 uniform layout(binding = 2) sampler2D _gAlbedo;
 
-in vec4 LightSpacePos;
-
 uniform sampler2D _ShadowMap;	//Shadow Map Sampler
 
 //Slope Bias
@@ -20,6 +18,9 @@ uniform vec3 _EyePos;
 uniform vec3 _LightDirection = vec3(0.0,-1.0,0.0);
 uniform vec3 _LightColor = vec3(1.0);
 uniform vec3 _AmbientColor = vec3(0.3,0.4,0.46);
+
+//Shadow Map Uniforms
+uniform mat4 _LightViewProjection; //Combined Light View->Projection Matrix
 
 struct Material{
 	float Ka; //Ambeint Coefficient (0-1)
@@ -52,9 +53,6 @@ float calcShadow(vec3 normal,vec3 toLight, sampler2D shadowMap, vec4 LightSpaceP
 		for(int x = -1; x <= 1; x++){
 			float pcfDepth = texture(shadowMap, sampleCoord.xy + vec2(x * texelOffset.x, y * texelOffset.y)).r;
 			shadow += step(pcfDepth, myDepth);
-
-			//vec2 uv  = LightSpacePos.xy + vec2(x * texelOffset.x, y * texelOffset.y);
-			//shadow += step(texture(_ShadowMap, uv).r, myDepth);
 		}
 	}
 	shadow /= 9.0;
@@ -72,6 +70,9 @@ vec3 calcLighting(vec3 normal,vec3 worldPos,vec3 albedo){
 	vec3 halfAngle = normalize(toLight + toEye);
 
 	float specularFactor = pow(max(dot(normal,halfAngle),0.0),_Material.Shininess);
+
+	//LightSpacePos
+	vec4 LightSpacePos = _LightViewProjection * vec4(worldPos,1.0);
 
 	//Shadow
 	float shadow = calcShadow(normal,toLight,_ShadowMap,LightSpacePos);	
@@ -93,5 +94,4 @@ void main()
 	//Worldspace Lighting Calculations
 	vec3 lightColor = calcLighting(normal,worldPos,albedo);
 	FragColor = vec4(albedo * lightColor, 1.0);
-
 }
