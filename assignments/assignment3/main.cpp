@@ -89,6 +89,29 @@ float quadVertices[] =
 	 1.0f,	1.0f,	1.0f, 1.0f
 };
 
+//Point Light
+struct PointLight
+{
+	glm::vec3 position;
+	glm::vec3 color;
+	float radius;
+	float intensity;
+};
+
+//Create array of Point Light colors
+float red[] = { 1.0f, 0.0f, 0.0f };
+float green[] = { 0.0f, 1.0f, 0.0f };
+float blue[] = { 0.0f, 0.0f, 1.0f };
+float yellow[] = { 1.0f, 1.0f, 0.0f };
+float cyan[] = { 0.0f, 1.0f, 1.0f };
+float magenta[] = { 1.0f, 0.0f, 1.0f };
+
+float colors[6][3] = { *red, *green, *blue, *yellow, *cyan, *magenta };
+
+const int MAX_POINT_LIGHTS = 64;
+PointLight pointLights[MAX_POINT_LIGHTS];
+float pointLightIntensity = 0.5f;
+
 int main() {
 	GLFWwindow* window = initWindow("Assignment 0", screenWidth, screenHeight);
 
@@ -110,13 +133,17 @@ int main() {
 	ew::Shader screenShader = ew::Shader("assets/postProcess.vert", "assets/postProcess.frag");
 	//Shadow Map Shader
 	ew::Shader shadowMapShader = ew::Shader("assets/depthOnly.vert", "assets/depthOnly.frag");
+	//Light Orb Shader
+	ew::Shader lightOrbShader = ew::Shader("assets/lightOrb.vert", "assets/lightOrb.frag");
 
 	//Textures
+
 	//Monkey Textures
 	monkeyTexture = ew::loadTexture("assets/monkey_color.jpg");
 	monkeyNormal = ew::loadTexture("assets/monkey_normal.jpg");
 	monkeyTextures.push_back(monkeyTexture);
 	monkeyTextures.push_back(monkeyNormal);
+
 	//Concrete Textures
 	concreteTexture = ew::loadTexture("assets/concrete_color.jpg");
 	concreteNormal = ew::loadTexture("assets/concrete_normal.jpg");
@@ -146,6 +173,19 @@ int main() {
 	hfLib::SceneAsset planeAsset = hfLib::SceneAsset(planeModel, planeTransform, concreteTextures);
 	scene.addAsset(planeAsset);
 
+	//Light Orb Model
+	ew::Mesh sphereMesh = ew::Mesh(ew::createSphere(1.0f, 8));
+	ew::Transform lightSphereTransform[MAX_POINT_LIGHTS];
+
+	//Set Point Light Variables
+	for (int i = 0; i < MAX_POINT_LIGHTS; i++)
+	{
+		pointLights[i].position = glm::vec3(sin(i * 30.0f * 3.14159f / 180.0f) * 3.0f, 5.0f, cos(i * 30.0f * 3.14159f / 180.0f) * 3.0f);
+		pointLights[i].intensity = pointLightIntensity;
+		pointLights[i].color = glm::vec3(colors[i % 6][0], colors[i % 6][1], colors[i % 6][2]);
+		pointLights[i].radius = 5.0f;
+	}
+
 	//Set Camera variables
 	camera.position = glm::vec3(0.0f, 0.0f, 5.0f);
 	camera.target = glm::vec3(0.0f, 0.0f, 0.0f);
@@ -159,8 +199,6 @@ int main() {
 	shadowMapCamera.farPlane = 12.0f;
 	shadowMapCamera.orthographic = true;
 	shadowMapCamera.orthoHeight = 8.0f;
-
-
 
 	//Create Framebuffer Screen Quad
 	unsigned int quadVAO, quadVBO;
@@ -252,64 +290,46 @@ int main() {
 		deferredShader.setVec3("_LightDirection", lightDirection);
 		deferredShader.setVec3("_LightColor", lightColor);
 		
-		glBindVertexArray(quadVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-
-
-
-		//Post Processing Pass
-
-
-
-		//Render First Pass
-		//glCullFace(GL_BACK);
-		/*glBindFramebuffer(GL_FRAMEBUFFER, framebuffer.fbo);
-		glViewport(0, 0, screenWidth, screenHeight);
-		glClearColor(0.6f,0.8f,0.92f,1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		//Use Shader
-		shader.use();
-		
-		//Bind Shadowmap Texture
-		glBindTextureUnit(2, shadowMapTex);
-		shader.setInt("_ShadowMap", 2);
-		shader.setFloat("_MinSlopeBias", minSlopeBias);
-		shader.setFloat("_MaxSlopeBias", maxSlopeBias);
-
-		// Custom Shader Uniforms
-		shader.setFloat("_Material.Ka", material.Ka);
-		shader.setFloat("_Material.Kd", material.Kd);
-		shader.setFloat("_Material.Ks", material.Ks);
-		shader.setFloat("_Material.Shininess", material.Shininess);
-		shader.setFloat("_Material.Shininess", material.Shininess);
-		
-		
-		shader.setVec3("_EyePos", camera.position);
+		for(int i = 0; i <MAX_POINT_LIGHTS; i++)
+		{
+			deferredShader.setVec3("_PointLights[" + std::to_string(i) + "].position", pointLights[i].position);
+			deferredShader.setVec3("_PointLights[" + std::to_string(i) + "].color", pointLights[i].color);
+			deferredShader.setFloat("_PointLights[" + std::to_string(i) + "].radius", pointLights[i].radius);
+			deferredShader.setFloat("_PointLights[" + std::to_string(i) + "].intensity", pointLights[i].intensity);
+		}
 
 		//Not Working ATM
 		//scene.getAsset(0).getTransform().rotation = glm::rotate(scene.getAsset(0).getTransform().rotation, deltaTime, glm::vec3(0.0, 1.0, 0.0));
 		//monkeyTransform.rotation = glm::rotate(monkeyTransform.rotation, deltaTime, glm::vec3(0.0, 1.0, 0.0));
 		//scene.getAsset(0).addTransform(monkeyTransform);
 
-		//monkeyTransform.rotation = glm::rotate(monkeyTransform.rotation, deltaTime, glm::vec3(0.0, 1.0, 0.0));
+		glBindVertexArray(quadVAO);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		shader.setMat4("_LightViewProjection", lightSpaceMatrix);
-		shader.setVec3("_LightDirection", lightDirection);
-		shader.setVec3("_LightColor", lightColor);
+		//Light Orb Draw
+		lightOrbShader.use();
+		lightOrbShader.setMat4("_ViewProjection", camera.projectionMatrix() * camera.viewMatrix());
 		
-		scene.draw(shader, camera);*/
+		for (int i = 0; i < MAX_POINT_LIGHTS; i++) {
+			lightSphereTransform[i].position = pointLights[i].position;
+			lightSphereTransform[i].scale = glm::vec3(0.2f);
+		}
+		
+		for (int i = 0; i < MAX_POINT_LIGHTS; i++)
+		{
 
-		//transform.modelMatrix() combines translation, rotation, and scale into a 4x4 model matrix
-		//shader.setMat4("_Model", monkeyTransform.modelMatrix());
 
-		// DON'T TOUCH BEYOND THIS POINT
-		//Second Pass
+			lightOrbShader.setMat4("_Model", lightSphereTransform[i].modelMatrix());
+			lightOrbShader.setVec3("_Color", pointLights[i].color);
+			sphereMesh.draw();
+		}
+
+
+		//Post Processing Pass
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		//Post Processing Effects
 		screenShader.use();
 		glBindTextureUnit(0, (GLuint)framebuffer.colorBuffer);
 		screenShader.setInt("_InverseOn",		postProcess.inverse);
@@ -361,14 +381,24 @@ void drawUI() {
 		ImGui::SliderFloat("SpecularK", &material.Ks, 0.0f, 1.0f);
 		ImGui::SliderFloat("Shininess", &material.Shininess, 2.0f, 1024.0f);
 	}
-	if (ImGui::CollapsingHeader("Light")) {
-		ImGui::ColorEdit3("LighColor", &lightColor.x);
+	if (ImGui::CollapsingHeader("Lights")) {
+		if (ImGui::CollapsingHeader("Directional Light")) {
+			ImGui::ColorEdit3("LightColor", &lightColor.x);
 
-		if(ImGui::SliderFloat3("Light Direction", &lightDirection.x, -1, 1));
+			if (ImGui::SliderFloat3("Light Direction", &lightDirection.x, -1, 1));
 			if (glm::length(lightDirection) != 0)
 			{
 				lightDirection = glm::normalize(lightDirection);
 			}
+		}
+		if (ImGui::CollapsingHeader("Point Lights")) {
+			ImGui::SliderFloat("Intensity", &pointLightIntensity, 0.1f, 2.0f);
+			for (int i = 0; i < MAX_POINT_LIGHTS; i++)
+			{
+				//Set Point Light Intensity
+				pointLights[i].intensity = pointLightIntensity;
+			}
+		}
 	}
 	if (ImGui::CollapsingHeader("Shadowmap")) {
 		ImGui::Checkbox("Orthographic", &shadowMapCamera.orthographic);

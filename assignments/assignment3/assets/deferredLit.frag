@@ -31,6 +31,40 @@ struct Material{
 };
 uniform Material _Material;
 
+struct PointLight{
+	vec3 position;
+	vec3 color;
+	float radius;
+	float intensity;
+};
+#define MAX_POINT_LIGHTS 64
+uniform PointLight _PointLights[MAX_POINT_LIGHTS];
+
+float attenuateLinear(float distance, float radius){
+	return clamp((radius - distance) / radius, 0.0, 1.0);
+}
+
+vec3 calcPointLight(PointLight light, vec3 normal, vec3 worldPos){
+	vec3 diff = light.position - worldPos;
+	vec3 toLight = normalize(diff);
+
+	//Blinn Phong Calculations
+	vec3 toEye = normalize(_EyePos - worldPos);
+	vec3 halfAngle = normalize(toLight + toEye);
+	float diffuseFactor = max(dot(normal, toLight),0.0);
+	float specularFactor = pow(max(dot(normal,halfAngle),0.0),_Material.Shininess);
+	vec3 lightColor = light.color * (_Material.Kd * diffuseFactor + _Material.Ks * specularFactor);
+
+	//Attenuation
+	float d = length(diff);
+	lightColor *= attenuateLinear(d,light.radius);
+
+	//Factor in intensity
+	lightColor *= light.intensity;
+
+	return lightColor;
+}
+
 float calcShadow(vec3 normal,vec3 toLight, sampler2D shadowMap, vec4 LightSpacePos){
 	
 	float shadow = 0.0f;
@@ -60,7 +94,7 @@ float calcShadow(vec3 normal,vec3 toLight, sampler2D shadowMap, vec4 LightSpaceP
 	return shadow;
 }
 
-vec3 calcLighting(vec3 normal,vec3 worldPos,vec3 albedo){
+vec3 calcDirectionalLighting(vec3 normal,vec3 worldPos,vec3 albedo){
 
 	vec3 toLight = -_LightDirection;
 	float diffuseFactor = max(dot(normal, toLight),0.0);
@@ -91,7 +125,11 @@ void main()
 	vec3 normal = texture(_gNormal, TexCoords).rgb;
 	vec3 albedo = texture(_gAlbedo, TexCoords).rgb;
 
-	//Worldspace Lighting Calculations
-	vec3 lightColor = calcLighting(normal,worldPos,albedo);
-	FragColor = vec4(albedo * lightColor, 1.0);
+	vec3 totalLight = vec3(0.0);
+	totalLight += calcDirectionalLighting(normal,worldPos,albedo);
+	for(int i = 0; i < MAX_POINT_LIGHTS; i++){
+		totalLight += calcPointLight(_PointLights[i],normal,worldPos);
+	}
+
+	FragColor = vec4(albedo * totalLight, 1.0);
 }
