@@ -99,14 +99,14 @@ struct PointLight
 };
 
 //Create array of Point Light colors
-float red[] = { 1.0f, 0.0f, 0.0f };
-float green[] = { 0.0f, 1.0f, 0.0f };
-float blue[] = { 0.0f, 0.0f, 1.0f };
-float yellow[] = { 1.0f, 1.0f, 0.0f };
-float cyan[] = { 0.0f, 1.0f, 1.0f };
-float magenta[] = { 1.0f, 0.0f, 1.0f };
+glm::vec3 red = { 1.0f, 0.0f, 0.0f };
+glm::vec3 green = { 0.0f, 1.0f, 0.0f };
+glm::vec3 blue = { 0.0f, 0.0f, 1.0f };
+glm::vec3 yellow = { 1.0f, 1.0f, 0.0f };
+glm::vec3 cyan = { 0.0f, 1.0f, 1.0f };
+glm::vec3 magenta = { 1.0f, 0.0f, 1.0f };
 
-float colors[6][3] = { *red, *green, *blue, *yellow, *cyan, *magenta };
+glm::vec3 colors[6] = { red, green, blue, yellow, cyan, magenta };
 
 const int MAX_POINT_LIGHTS = 64;
 PointLight pointLights[MAX_POINT_LIGHTS];
@@ -180,10 +180,15 @@ int main() {
 	//Set Point Light Variables
 	for (int i = 0; i < MAX_POINT_LIGHTS; i++)
 	{
-		pointLights[i].position = glm::vec3(sin(i * 30.0f * 3.14159f / 180.0f) * 3.0f, 5.0f, cos(i * 30.0f * 3.14159f / 180.0f) * 3.0f);
+		//Set point light positions over a grid
+		pointLights[i].position = glm::vec3(i % 8 - 3.5, 0, i / 8 - 3.5);
+
 		pointLights[i].intensity = pointLightIntensity;
-		pointLights[i].color = glm::vec3(colors[i % 6][0], colors[i % 6][1], colors[i % 6][2]);
+		pointLights[i].color = colors[i % 6];
 		pointLights[i].radius = 5.0f;
+
+		lightSphereTransform[i].position = pointLights[i].position;
+		lightSphereTransform[i].scale = glm::vec3(0.2f);
 	}
 
 	//Set Camera variables
@@ -290,7 +295,7 @@ int main() {
 		deferredShader.setVec3("_LightDirection", lightDirection);
 		deferredShader.setVec3("_LightColor", lightColor);
 		
-		for(int i = 0; i <MAX_POINT_LIGHTS; i++)
+		for(int i = 0; i < MAX_POINT_LIGHTS; i++)
 		{
 			deferredShader.setVec3("_PointLights[" + std::to_string(i) + "].position", pointLights[i].position);
 			deferredShader.setVec3("_PointLights[" + std::to_string(i) + "].color", pointLights[i].color);
@@ -306,23 +311,26 @@ int main() {
 		glBindVertexArray(quadVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, gBuffer.fbo); //Read from gBuffer 
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebuffer.fbo); //Write to current fbo
+		glBlitFramebuffer(0, 0, screenWidth, screenHeight, 0, 0, screenWidth, screenHeight, GL_DEPTH_BUFFER_BIT, GL_NEAREST	);
+
+
 		//Light Orb Draw
 		lightOrbShader.use();
 		lightOrbShader.setMat4("_ViewProjection", camera.projectionMatrix() * camera.viewMatrix());
-		
-		for (int i = 0; i < MAX_POINT_LIGHTS; i++) {
-			lightSphereTransform[i].position = pointLights[i].position;
-			lightSphereTransform[i].scale = glm::vec3(0.2f);
-		}
-		
+
+		//make point lights revolve around world origin over time
 		for (int i = 0; i < MAX_POINT_LIGHTS; i++)
 		{
-
-
 			lightOrbShader.setMat4("_Model", lightSphereTransform[i].modelMatrix());
 			lightOrbShader.setVec3("_Color", pointLights[i].color);
 			sphereMesh.draw();
 		}
+
+
+
+
 
 
 		//Post Processing Pass

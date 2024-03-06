@@ -17,6 +17,7 @@ namespace hfLib {
 	class SceneAsset
 	{
 	public:
+		SceneAsset(ew::Model model, ew::Transform transform);
 		SceneAsset(ew::Model model, ew::Transform transform, std::vector<GLuint> textures);
 		~SceneAsset();
 		void addModel(ew::Model model);

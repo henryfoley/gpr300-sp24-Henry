@@ -2,6 +2,12 @@
 
 namespace hfLib {
 	// Scene Asset
+	SceneAsset::SceneAsset(ew::Model model, ew::Transform transform)
+	{
+		this->model = model;
+		this->transform = transform;
+	}
+
 	SceneAsset::SceneAsset(ew::Model model, ew::Transform transform, std::vector<GLuint> textures)
 	{
 		this->model = model;
