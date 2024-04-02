@@ -328,11 +328,6 @@ int main() {
 			sphereMesh.draw();
 		}
 
-
-
-
-
-
 		//Post Processing Pass
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
