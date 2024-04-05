@@ -12,6 +12,7 @@
 #include "../ew/shader.h"
 #include "../ew/camera.h"
 #include "../ew/transform.h"
+#include "../hfLib/node.h"
 
 namespace hfLib {
 	class SceneAsset
@@ -19,10 +20,14 @@ namespace hfLib {
 	public:
 		SceneAsset(ew::Model model, ew::Transform transform);
 		SceneAsset(ew::Model model, ew::Transform transform, std::vector<GLuint> textures);
+		SceneAsset(ew::Model model, int parentIndex, Node transform, std::vector<GLuint> textures);
 		~SceneAsset();
 		void addModel(ew::Model model);
 		void addTransform(ew::Transform transform);
 		void addTexture(GLuint texture);
+		void setPos(glm::vec3 pos);
+		void setRot(glm::quat rot);
+		void setScale(glm::vec3 scale);
 		ew::Model getModel();
 		ew::Transform getTransform();
 		std::vector<GLuint> getTextures();
@@ -43,6 +48,9 @@ namespace hfLib {
 			Scene(std::vector<SceneAsset> assets);
 			void addAsset(SceneAsset asset);
 			void removeAsset(int index);
+			void setAssetPos(int index, glm::vec3 pos);
+			void setAssetRot(int index, glm::quat rot);
+			void setAssetScale(int index, glm::vec3 scale);
 			void draw(ew::Shader shader, ew::Camera camera);
 			SceneAsset getAsset(int index);
 	};

@@ -15,6 +15,15 @@ namespace hfLib {
 		this->textures = textures;
 	}
 
+	SceneAsset::SceneAsset(ew::Model model, int parentIndex, Node transform, std::vector<GLuint> textures)
+	{
+		this->model = model;
+		this->transform.position = transform.position;
+		this->transform.rotation = transform.rotation;
+		this->transform.scale = transform.scale;
+		this->textures = textures;
+	}
+
 	SceneAsset::~SceneAsset()
 	{
 	}
@@ -32,6 +41,21 @@ namespace hfLib {
 	void SceneAsset::addTexture(GLuint texture)
 	{
 		textures.push_back(texture);
+	}
+
+	void SceneAsset::setPos(glm::vec3 pos)
+	{
+		transform.position = pos;
+	}
+
+	void SceneAsset::setRot(glm::quat rot)
+	{
+		transform.rotation = rot;
+	}
+
+	void SceneAsset::setScale(glm::vec3 scale)
+	{
+		transform.scale = scale;
 	}
 
 	ew::Model SceneAsset::getModel()
@@ -63,6 +87,21 @@ namespace hfLib {
 	void Scene::removeAsset(int index)
 	{
 		assets.erase(assets.begin() + index);
+	}
+
+	void Scene::setAssetPos(int index, glm::vec3 pos)
+	{
+		assets[index].setPos(pos);
+	}
+
+	void Scene::setAssetRot(int index, glm::quat rot)
+	{
+		assets[index].setRot(rot);
+	}
+
+	void Scene::setAssetScale(int index, glm::vec3 scale)
+	{
+		assets[index].setScale(scale);
 	}
 
 	void Scene::draw(ew::Shader shader, ew::Camera camera)

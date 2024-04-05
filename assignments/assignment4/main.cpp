@@ -108,7 +108,7 @@ glm::vec3 magenta = { 1.0f, 0.0f, 1.0f };
 
 glm::vec3 colors[6] = { red, green, blue, yellow, cyan, magenta };
 
-const int MAX_POINT_LIGHTS = 64;
+const int MAX_POINT_LIGHTS = 1;
 PointLight pointLights[MAX_POINT_LIGHTS];
 float pointLightIntensity = 0.5f;
 
@@ -152,19 +152,11 @@ int main() {
 
 	//Monkey Shader, Model, and Transform
 	ew::Model monkeyModel = ew::Model("assets/Suzanne.fbx");
-	ew::Transform monkeyTransforms[12]; //Array of Transforms
+	ew::Transform monkeyTransform; //Array of Transforms
 
-	//Set Monkey Transform
-	for (int i = 0; i < 12; i++)
-	{
-		monkeyTransforms[i].position = glm::vec3(0, 0, 0);
-		monkeyTransforms[i].position.x = sin(i * 30.0f * 3.14159f / 180.0f) * 3.0f;
-		monkeyTransforms[i].position.z = cos(i * 30.0f * 3.14159f / 180.0f) * 3.0f;
-		monkeyTransforms[i].position.y = 0.0f;
-		monkeyTransforms[i].rotation = glm::vec3(0, i * 30.0f, 0);
-		monkeyTransforms[i].scale = glm::vec3(0.5f);
-		scene.addAsset(hfLib::SceneAsset(monkeyModel, monkeyTransforms[i], monkeyTextures));
-	}
+	monkeyTransform.position = glm::vec3(0, 0, 0);
+	monkeyTransform.scale = glm::vec3(0.5f);
+	scene.addAsset(hfLib::SceneAsset(monkeyModel, monkeyTransform, monkeyTextures));
 
 	//Ground Plane Shader, Model, and Transform
 	ew::Model planeModel = ew::Model(ew::Mesh(ew::createPlane(10, 10, 1)));
@@ -302,6 +294,11 @@ int main() {
 			deferredShader.setFloat("_PointLights[" + std::to_string(i) + "].radius", pointLights[i].radius);
 			deferredShader.setFloat("_PointLights[" + std::to_string(i) + "].intensity", pointLights[i].intensity);
 		}
+
+		monkeyTransform.rotation = glm::rotate(monkeyTransform.rotation, deltaTime, glm::vec3(0.0, 1.0, 0.0));
+
+		//update scene asset transforms
+		scene.setAssetRot(0, monkeyTransform.rotation);
 
 		//Not Working ATM
 		//scene.getAsset(0).getTransform().rotation = glm::rotate(scene.getAsset(0).getTransform().rotation, deltaTime, glm::vec3(0.0, 1.0, 0.0));
