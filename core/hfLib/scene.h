@@ -20,7 +20,7 @@ namespace hfLib {
 	public:
 		SceneAsset(ew::Model model, ew::Transform transform);
 		SceneAsset(ew::Model model, ew::Transform transform, std::vector<GLuint> textures);
-		SceneAsset(ew::Model model, int parentIndex, Node transform, std::vector<GLuint> textures);
+		SceneAsset(ew::Model model, Node* transform, std::vector<GLuint> textures);
 		~SceneAsset();
 		void addModel(ew::Model model);
 		void addTransform(ew::Transform transform);
@@ -29,13 +29,15 @@ namespace hfLib {
 		void setRot(glm::quat rot);
 		void setScale(glm::vec3 scale);
 		ew::Model getModel();
-		ew::Transform getTransform();
+		glm::mat4 getModelMatrix();
 		std::vector<GLuint> getTextures();
 
 	private:
+		bool nodeTransform = false;
 		ew::Model model;
 		ew::Transform transform;
 		std::vector<GLuint> textures;
+		Node* node;
 	};
 	
 	class Scene {

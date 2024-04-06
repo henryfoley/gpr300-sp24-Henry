@@ -15,12 +15,11 @@ namespace hfLib {
 		this->textures = textures;
 	}
 
-	SceneAsset::SceneAsset(ew::Model model, int parentIndex, Node transform, std::vector<GLuint> textures)
+	SceneAsset::SceneAsset(ew::Model model, Node* transform, std::vector<GLuint> textures)
 	{
 		this->model = model;
-		this->transform.position = transform.position;
-		this->transform.rotation = transform.rotation;
-		this->transform.scale = transform.scale;
+		this->nodeTransform = true;
+		this->node = transform;
 		this->textures = textures;
 	}
 
@@ -63,9 +62,15 @@ namespace hfLib {
 		return model;
 	}
 
-	ew::Transform SceneAsset::getTransform()
+	glm::mat4 SceneAsset::getModelMatrix()
 	{
-		return transform;
+		if (nodeTransform){
+			return node->globalTransform;
+		}
+		else {
+			return transform.modelMatrix();
+		}
+
 	}
 
 	std::vector<GLuint> SceneAsset::getTextures()
@@ -118,7 +123,7 @@ namespace hfLib {
 			glBindTextureUnit(1, asset.getTextures()[1]);
 			shader.setInt("_NormalTex", 1);
 
-			shader.setMat4("_Model", asset.getTransform().modelMatrix());
+			shader.setMat4("_Model", asset.getModelMatrix());
 
 			asset.getModel().draw();
 		}

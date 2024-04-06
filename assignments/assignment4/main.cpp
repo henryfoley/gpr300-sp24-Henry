@@ -11,6 +11,7 @@
 #include <ew/procGen.h>
 #include <hfLib/framebuffer.h>
 #include <hfLib/scene.h>
+#include <hfLib/node.h>
 
 #include <GLFW/glfw3.h>
 #include <imgui.h>
@@ -152,11 +153,73 @@ int main() {
 
 	//Monkey Shader, Model, and Transform
 	ew::Model monkeyModel = ew::Model("assets/Suzanne.fbx");
-	ew::Transform monkeyTransform; //Array of Transforms
+	//ew::Transform monkeyTransform; //Array of Transforms
 
-	monkeyTransform.position = glm::vec3(0, 0, 0);
-	monkeyTransform.scale = glm::vec3(0.5f);
-	scene.addAsset(hfLib::SceneAsset(monkeyModel, monkeyTransform, monkeyTextures));
+	//Transform Hierarachy
+	hfLib::Hierarachy hierarachy;
+	hfLib::Node monkeyTorso;
+	hfLib::Node monkeyHead;
+	hfLib::Node monkeyLeftArm;
+	hfLib::Node monkeyRightArm;
+	hfLib::Node monkeyLeftHand;
+	hfLib::Node monkeyRightHand;
+	hfLib::Node monkeyLeftLeg;
+	hfLib::Node monkeyRightLeg;
+
+	//Set Parent Indexes, Transform Positions, and Add Nodes to Hierarachy
+	monkeyTorso.parentIndex = -1;
+	monkeyTorso.position = glm::vec3(0.0f, 1.0f, 0.0f);
+	hierarachy.nodes.push_back(&monkeyTorso);
+
+	monkeyHead.parentIndex = 0;
+	monkeyHead.position = glm::vec3(0.0f, 1.25f, 0.0f);
+	monkeyHead.scale = glm::vec3(0.25f);
+	hierarachy.nodes.push_back(&monkeyHead);
+
+	monkeyLeftArm.parentIndex = 0;
+	monkeyLeftArm.position = glm::vec3(1.0f, 0.0f, 0.0f);
+	monkeyLeftArm.scale = glm::vec3(0.5f, 1.0f, 0.5f);
+	hierarachy.nodes.push_back(&monkeyLeftArm);
+
+	monkeyRightArm.parentIndex = 0;
+	monkeyRightArm.position = glm::vec3(-1.0f, 0.0f, 0.0f);
+	monkeyRightArm.scale = glm::vec3(0.5f, 1.0f, 0.5f);
+	hierarachy.nodes.push_back(&monkeyRightArm);
+
+	monkeyLeftHand.parentIndex = 2;
+	monkeyLeftHand.position = glm::vec3(0.75f, -1.0f, 0.0f);
+	monkeyLeftHand.scale = glm::vec3(0.25f);
+	hierarachy.nodes.push_back(&monkeyLeftHand);
+
+	monkeyRightHand.parentIndex = 3;
+	monkeyRightHand.position = glm::vec3(-0.75f, -1.0f, 0.0f);
+	monkeyRightHand.scale = glm::vec3(0.25f);
+	hierarachy.nodes.push_back(&monkeyRightHand);
+
+	monkeyLeftLeg.parentIndex = 0;
+	monkeyLeftLeg.position = glm::vec3(0.5f, -1.0f, 0.0f);
+	monkeyLeftLeg.scale = glm::vec3(0.5f, 1.0f, 0.5f);
+	hierarachy.nodes.push_back(&monkeyLeftLeg);
+
+	monkeyRightLeg.parentIndex = 0;
+	monkeyRightLeg.position = glm::vec3(-0.5f, -1.0f, 0.0f);
+	monkeyRightLeg.scale = glm::vec3(0.5f, 1.0f, 0.5f);
+	hierarachy.nodes.push_back(&monkeyRightLeg);
+
+	//Add Hierarachy to Scene
+	scene.addAsset(hfLib::SceneAsset(monkeyModel, hierarachy.nodes[0], monkeyTextures));
+	scene.addAsset(hfLib::SceneAsset(monkeyModel, hierarachy.nodes[1], monkeyTextures));
+	scene.addAsset(hfLib::SceneAsset(monkeyModel, hierarachy.nodes[2], monkeyTextures));
+	scene.addAsset(hfLib::SceneAsset(monkeyModel, hierarachy.nodes[3], monkeyTextures));
+	scene.addAsset(hfLib::SceneAsset(monkeyModel, hierarachy.nodes[4], monkeyTextures));
+	scene.addAsset(hfLib::SceneAsset(monkeyModel, hierarachy.nodes[5], monkeyTextures));
+	scene.addAsset(hfLib::SceneAsset(monkeyModel, hierarachy.nodes[6], monkeyTextures));
+	scene.addAsset(hfLib::SceneAsset(monkeyModel, hierarachy.nodes[7], monkeyTextures));
+
+
+	//monkeyTransform.position = glm::vec3(0, 0, 0);
+	//monkeyTransform.scale = glm::vec3(0.5f);
+	//scene.addAsset(hfLib::SceneAsset(monkeyModel, monkeyTransform, monkeyTextures));
 
 	//Ground Plane Shader, Model, and Transform
 	ew::Model planeModel = ew::Model(ew::Mesh(ew::createPlane(10, 10, 1)));
@@ -233,7 +296,7 @@ int main() {
 		//Update Camera
 		cameraController.move(window, &camera, deltaTime);
 		
-		shadowMapCamera.position = scene.getAsset(0).getTransform().position - lightDirection * lightCamDist;
+		shadowMapCamera.position = glm::vec3(0.0f, 1.0f, 0.0f) - lightDirection * lightCamDist;
 		glm::mat4 lightSpaceMatrix = shadowMapCamera.projectionMatrix() * shadowMapCamera.viewMatrix();
 
 		//Enable Depth Testing
@@ -295,15 +358,21 @@ int main() {
 			deferredShader.setFloat("_PointLights[" + std::to_string(i) + "].intensity", pointLights[i].intensity);
 		}
 
-		monkeyTransform.rotation = glm::rotate(monkeyTransform.rotation, deltaTime, glm::vec3(0.0, 1.0, 0.0));
+		monkeyTorso.rotation = glm::rotate(monkeyTorso.rotation, 0.5f * deltaTime, glm::vec3(0.0, 1.0, 0.0));
+		monkeyHead.position.y = 1.25f + 0.25f * sin(time);
+		monkeyHead.rotation = glm::rotate(monkeyHead.rotation, deltaTime, glm::vec3(0.0, 1.0, 0.0));
+		monkeyLeftArm.rotation = glm::rotate(monkeyLeftArm.rotation, deltaTime, glm::vec3(1.0, 0.0, 0.0));
+		monkeyRightArm.rotation = glm::rotate(monkeyRightArm.rotation, deltaTime, glm::vec3(1.0, 0.0, 0.0));
+		monkeyLeftHand.rotation = glm::rotate(monkeyLeftHand.rotation, deltaTime, glm::vec3(0.0, 2.0, 0.0));
+		monkeyRightHand.rotation = glm::rotate(monkeyRightHand.rotation, deltaTime, glm::vec3(0.0, 2.0, 0.0));
 
 		//update scene asset transforms
-		scene.setAssetRot(0, monkeyTransform.rotation);
-
-		//Not Working ATM
-		//scene.getAsset(0).getTransform().rotation = glm::rotate(scene.getAsset(0).getTransform().rotation, deltaTime, glm::vec3(0.0, 1.0, 0.0));
-		//monkeyTransform.rotation = glm::rotate(monkeyTransform.rotation, deltaTime, glm::vec3(0.0, 1.0, 0.0));
-		//scene.getAsset(0).addTransform(monkeyTransform);
+		scene.setAssetRot(0, monkeyTorso.rotation);
+		scene.setAssetPos(1, monkeyHead.position);
+		scene.setAssetRot(1, monkeyHead.rotation);
+		scene.setAssetRot(2, monkeyLeftArm.rotation);
+		scene.setAssetRot(3, monkeyRightArm.rotation);
+		hfLib::SolveFK(hierarachy);
 
 		glBindVertexArray(quadVAO);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
